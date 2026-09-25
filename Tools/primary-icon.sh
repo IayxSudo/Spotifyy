@@ -15,8 +15,12 @@
 #      encodes (AppIcon60x60@2x.png -> 120px, AppIcon60x60@3x.png -> 180px,
 #      AppIcon83.5x83.5@2x.png -> 167px, ...). That way the sizes iOS already
 #      expects keep matching instead of us guessing the icon set.
-#   2. If the bundle has no loose icon files at all (newer builds keep them
-#      inside Assets.car), the standard iPhone/iPad set is created instead.
+#   2. Any slot missing from the standard iPhone/iPad set is created too. Builds
+#      that ship a couple of loose icons — or none at all, keeping them inside
+#      Assets.car — would otherwise end up with a CFBundleIconFiles entry that
+#      has no matching file (a @3x device asking for AppIcon60x60@3x.png when
+#      only @2x exists), and iOS then falls back to the icon it can find, which
+#      is the stock one.
 #   3. CFBundleIconName is removed from CFBundlePrimaryIcon and
 #      CFBundleIconFiles is repointed at the loose files. While that
 #      asset-catalog key is present iOS reads the icon from Assets.car and
@@ -39,12 +43,16 @@ GENERATED_DIR="$ROOT_DIR/Assets/AppIcon/primary"
 PB="${PLIST_BUDDY:-/usr/libexec/PlistBuddy}"
 DEFAULT_ICON="SpotifyyMidnight"
 
-# iPhone/iPad icon slots to synthesise when the bundle ships no loose icons.
+# The standard iPhone/iPad icon slots, always guaranteed to exist.
 # name:points:scales — points is the icon's nominal size, scales are the
 # @Nx variants iOS looks for.
-FALLBACK_ICONS=(
+STANDARD_ICONS=(
+    "AppIcon20x20:20:2,3"
+    "AppIcon29x29:29:2,3"
+    "AppIcon40x40:40:2,3"
     "AppIcon60x60:60:2,3"
     "AppIcon76x76~ipad:76:1,2"
+    "AppIcon83.5x83.5~ipad:83.5:2"
 )
 
 resolve_source() {
@@ -147,33 +155,36 @@ patch_app() {
         rendered=$((rendered + 1))
     done <<<"$ipad_files"
 
-    if [ "$rendered" -eq 0 ]; then
-        local spec base points scales scale
-        for spec in "${FALLBACK_ICONS[@]}"; do
-            base="${spec%%:*}"; spec="${spec#*:}"
-            points="${spec%%:*}"; scales="${spec#*:}"
-            IFS=',' read -ra scale_list <<<"$scales"
-            for scale in "${scale_list[@]}"; do
-                name="$base"
-                # iOS expects the scale *before* the idiom marker:
-                # AppIcon76x76@2x~ipad.png, never AppIcon76x76~ipad@2x.png.
-                if [ "$scale" != "1" ]; then
-                    case "$name" in
-                        *~ipad) name="${name%~ipad}@${scale}x~ipad" ;;
-                        *)      name="$name@${scale}x" ;;
-                    esac
-                fi
-                px="$(awk -v p="$points" -v s="$scale" 'BEGIN { printf "%d", p * s + 0.5 }')"
-                render "$source" "$app/$name.png" "$px"
-                rendered=$((rendered + 1))
+    # Whatever the bundle did not ship, create. Anything already on disk was
+    # re-rendered above, so this only fills the gaps.
+    local spec base points scales scale created=0
+    for spec in "${STANDARD_ICONS[@]}"; do
+        base="${spec%%:*}"; spec="${spec#*:}"
+        points="${spec%%:*}"; scales="${spec#*:}"
+        IFS=',' read -ra scale_list <<<"$scales"
+        for scale in "${scale_list[@]}"; do
+            name="$base"
+            # iOS expects the scale *before* the idiom marker:
+            # AppIcon76x76@2x~ipad.png, never AppIcon76x76~ipad@2x.png.
+            if [ "$scale" != "1" ]; then
                 case "$name" in
-                    *~ipad*) ipad_files="$ipad_files$name.png"$'\n' ;;
-                    *)       phone_files="$phone_files$name.png"$'\n' ;;
+                    *~ipad) name="${name%~ipad}@${scale}x~ipad" ;;
+                    *)      name="$name@${scale}x" ;;
                 esac
-            done
+            fi
+            [ -f "$app/$name.png" ] && continue
+            px="$(awk -v p="$points" -v s="$scale" 'BEGIN { printf "%d", p * s + 0.5 }')"
+            render "$source" "$app/$name.png" "$px"
+            rendered=$((rendered + 1))
+            created=$((created + 1))
         done
-        echo "[primary-icon] bundle had no loose icons — wrote the standard set"
-    fi
+    done
+    [ "$created" -gt 0 ] && echo "[primary-icon] created $created missing size(s) from the standard set"
+
+    # Re-scan so the plist lists every icon that now exists, including the ones
+    # just added, rather than only what the source build happened to ship.
+    phone_files="$(loose_icons "$app" no)"
+    ipad_files="$(loose_icons "$app" yes)"
 
     # 3. Drop the asset-catalog icon reference and repoint CFBundleIconFiles.
 

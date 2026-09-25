@@ -11,6 +11,7 @@
 # Must be LF in the repository *and* in the working tree: these are executed or
 # parsed by a Unix toolchain on CI (macOS runners).
 *.sh      text eol=lf
+*.py      text eol=lf
 Makefile  text eol=lf
 control   text eol=lf
 *.yml     text eol=lf

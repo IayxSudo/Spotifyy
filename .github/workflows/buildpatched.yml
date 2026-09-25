@@ -4,7 +4,7 @@ on:
     inputs:
       branch:
         description: "Branch to build from"
-        default: "Master"
+        default: "main"
         required: true
         type: string
       ipa_url:
@@ -98,6 +98,14 @@ jobs:
             echo "::error::Not a valid IPA: $file_type"
             exit 1
           fi
+
+      - name: Strip any tweak already baked into the base IPA
+        if: ${{ inputs.ipa_url != '' }}
+        run: |
+          # Sideloadable Spotify IPAs are usually already patched (EeveeSpotify
+          # and friends). Loading Spotifyy on top of one of those runs two
+          # copies of the same tweak in a single process.
+          python3 Tools/clean-base-ipa.py ${{ github.workspace }}/spotify.ipa
 
       - name: Build zxPluginsInject.dylib
         if: ${{ inputs.ipa_url != '' }}
