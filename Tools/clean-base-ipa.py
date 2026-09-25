@@ -33,17 +33,19 @@ import struct
 import sys
 import zipfile
 
-# Tweak basenames to strip, without the extension. A stale Spotifyy.dylib is
+# Injection basenames to strip, without the extension. A stale Spotifyy.dylib is
 # stripped too, so re-running this on an already-patched IPA cleans it.
 #
-# zxPluginsInject is deliberately absent: it is not a competing tweak but the
-# load-command injector that our own pipeline adds back at the same path, so
-# leaving the existing copy in place is harmless and keeps plugin injection
-# working even if ipapatch decides the binary is already patched.
-STALE_STEMS = ("EeveeSpotify", "Spotifyy")
+# zxPluginsInject belongs in this list even though it is not a competing tweak:
+# ipapatch refuses to LC-inject a dylib whose load command is already present
+# ("already exists (already patched)") and aborts the whole build, and a base
+# that was patched before always carries one in the main executable and in every
+# appex. Repointing that load command also clears ipapatch's name comparison, so
+# its own fresh injection succeeds.
+STALE_STEMS = ("EeveeSpotify", "Spotifyy", "zxPluginsInject")
 
 # Bundles belonging to those tweaks. Jailbreak tweaks ship no bundle, but
-# IPA-patched builds of them do.
+# IPA-patched builds of them do. zxPluginsInject has none.
 STALE_BUNDLES = ("EeveeSpotify.bundle", "Spotifyy.bundle")
 
 # A stale load is pointed at a path that cannot exist as well as downgraded to
