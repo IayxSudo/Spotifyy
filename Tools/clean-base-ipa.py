@@ -50,10 +50,14 @@ STALE_BUNDLES = ("EeveeSpotify.bundle", "Spotifyy.bundle")
 
 # A stale load is pointed at a path that cannot exist as well as downgraded to
 # LC_LOAD_WEAK_DYLIB, so the skip holds independently of dyld's weak-link
-# behaviour. The string is rewritten in place, so it must be no longer than the
-# shortest load path we target: "@rpath/Spotifyy.dylib" (21 bytes) has 20 bytes
-# of string plus its NUL terminator.
-STRIPPED_PATH = b"/__stripped__.dylib"
+# behaviour.
+#
+# The replacement is padded to the *exact* length of the path it replaces: a
+# shorter string would leave NUL bytes behind, and the load-command injectors
+# downstream (cyan, ipapatch) look for exactly that kind of slack to write their
+# own commands into. Reclaiming it shifts the table and leaves commands that no
+# longer parse.
+STRIPPED_SUFFIX = b".dylib"
 
 MACHO_MAGICS = frozenset((
     0xFEEDFACE,  # 32-bit, host endian
@@ -100,6 +104,13 @@ def looks_like_macho(data):
     return len(data) >= 4 and struct.unpack_from("<I", data, 0)[0] in MACHO_MAGICS
 
 
+def exact_length_path(room):
+    """A path that cannot exist, exactly `room` bytes long (or None if absurd)."""
+    if room < len(STRIPPED_SUFFIX) + 2:
+        return None
+    return b"/" + b"_" * (room - len(STRIPPED_SUFFIX) - 1) + STRIPPED_SUFFIX
+
+
 def patch_thin(buf, off):
     """Neutralise stale dylib loads in one thin Mach-O slice.
 
@@ -137,9 +148,12 @@ def patch_thin(buf, off):
                     region = buf[o + str_off:o + cmdsize]
                     nul = region.find(b"\x00")
                     room = nul if nul >= 0 else len(region)
-                    if len(STRIPPED_PATH) <= room:
-                        pad = b"\x00" * (room - len(STRIPPED_PATH))
-                        buf[o + str_off:o + str_off + room] = STRIPPED_PATH + pad
+                    repl = exact_length_path(room)
+                    if repl is not None:
+                        # Leave the original NUL terminator in place; only the
+                        # string bytes change, so the command keeps its size and
+                        # no free space is created.
+                        buf[o + str_off:o + str_off + len(repl)] = repl
                         rewritten.append(path)
                     else:
                         unrewritten.append(path)
@@ -244,13 +258,15 @@ def report(res):
 
     for entry in res["patched"]:
         for h in entry["matched"]:
-            where = STRIPPED_PATH.decode() if h in entry["rewritten"] else "weak load only"
+            if h in entry["rewritten"]:
+                where = exact_length_path(len(h)).decode()
+            else:
+                where = "weak load only"
             print("[clean-base] neutralised load of %s (-> %s) in %s"
                   % (h, where, entry["file"]))
         for h in entry["unrewritten"]:
-            print("[clean-base] warning: load path %s in %s was longer than %d bytes, "
-                  "weakened without repointing"
-                  % (h, entry["file"], len(STRIPPED_PATH)))
+            print("[clean-base] warning: could not repoint %s in %s, weakened only"
+                  % (h, entry["file"]))
 
     if not dylibs and not res["patched"] and not res["removed"]:
         print("[clean-base] nothing to strip - base already clean")
