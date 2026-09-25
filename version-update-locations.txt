@@ -1,0 +1,27 @@
+Spotifyy Version Update Locations
+=====================================
+
+When bumping the version, update these 2 files:
+
+1. control
+   - Line 3: Version: X.X.X
+   - Example: Version: 6.7.0
+
+2. Sources/Spotifyy/Tweak.x.swift
+   - static let version = "X.X.X"
+   - Example: static let version = "6.7.0"
+   - static let buildNumber = "N" — resets to "1" on a new version, and
+     increments for a re-cut of the same version.
+   - Shown in Settings as "vX.X.X (build N)".
+
+Nothing else hardcodes the tweak version:
+
+- build-ipa-local.sh reads it from control with
+  VERSION=$(grep -E '^Version:' control | awk '{print $2}')
+- buildpatched.yml / buildnopatch.yml / build-and-release-yourself.yml do the
+  same (SPOTIFYY_VERSION=$(grep -E '^Version:' control | awk '{print $2}')),
+  and name the IPA Outputs/IPAS/Spotifyy-<version>-<Spotify version>.ipa
+- builddeb.yml packages packages/com.spotifyy.spotifyy_<version>.deb
+
+So control is the single source of truth; Tweak.x.swift must be kept in sync by
+hand for the in-app version display and the release-update check.

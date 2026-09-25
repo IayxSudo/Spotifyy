@@ -1,0 +1,6 @@
+Spotifyy is a community modification of the Spotify iOS app and is not
+affiliated with Spotify AB.
+
+To ensure stability, download the official Spotifyy IPA files only from the
+official Spotifyy GitHub releases page of the repository you built this from.
+Do not obtain IPAs from unauthorized or repacked sources. Stay safe!

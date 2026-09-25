@@ -1,0 +1,29 @@
+# Line endings.
+#
+# Blobs are stored with LF, always. This tree is edited on Windows, where Git
+# wants to check files out as CRLF; without this, the repository would record
+# CRLF and every macOS/Linux consumer of these files would break:
+#   - GNU make rejects CRLF in a Makefile ("missing separator")
+#   - dpkg-deb parses control, and "Version: 6.7.0\r" is not a valid version
+#   - a shell script starting with "#!/usr/bin/env bash\r" fails to exec
+* text=auto
+
+# Must be LF in the repository *and* in the working tree: these are executed or
+# parsed by a Unix toolchain on CI (macOS runners).
+*.sh      text eol=lf
+Makefile  text eol=lf
+control   text eol=lf
+*.yml     text eol=lf
+*.strings text eol=lf
+*.metal   text eol=lf
+
+# Binaries: never touch their bytes.
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.deb  binary
+*.bnk  binary
+*.icns binary
+
+# Extensionless prebuilt uploader (Mach-O).
+Tools/TelegramUploadSpotifyy binary

@@ -1,0 +1,71 @@
+#import <Orion/Orion.h>
+#import <Foundation/Foundation.h>
+#import <objc/message.h>
+#import "Tweak.h"
+
+#if THEOS_PACKAGE_SCHEME_ROOTHIDE
+#import <roothide.h>
+#else
+#import <libroot.h>
+#endif
+
+NSString *SpotifyyJBRootPath(NSString *path) {
+#if THEOS_PACKAGE_SCHEME_ROOTHIDE
+    return jbroot(path);
+#else
+    return JBROOT_PATH_NSSTRING(path);
+#endif
+}
+
+void SpotifyySBInvokeSeekDouble(id target, SEL selector, double argument) {
+    if (!target || !selector) return;
+    typedef id (*SeekFn)(id, SEL, double);
+    SeekFn fn = (SeekFn)objc_msgSend;
+    (void)fn(target, selector, argument);
+}
+
+void SpotifyyInvokeVoid(id target, SEL selector) {
+    if (!target || !selector) return;
+    typedef void (*VoidFn)(id, SEL);
+    VoidFn fn = (VoidFn)objc_msgSend;
+    fn(target, selector);
+}
+
+void SpotifyyInvokeObjectVoid(id target, SEL selector, id argument) {
+    if (!target || !selector) return;
+    typedef void (*ObjectVoidFn)(id, SEL, id);
+    ObjectVoidFn fn = (ObjectVoidFn)objc_msgSend;
+    fn(target, selector, argument);
+}
+
+static void writeDebugLog(NSString *message) {
+    NSString *logPath = [NSTemporaryDirectory() stringByAppendingPathComponent:@"spotifyy_debug.log"];
+    NSString *timestamp = [[NSDate date] description];
+    NSString *logMessage = [NSString stringWithFormat:@"[%@] %@\n", timestamp, message];
+
+    if ([[NSFileManager defaultManager] fileExistsAtPath:logPath]) {
+        NSFileHandle *fileHandle = [NSFileHandle fileHandleForWritingAtPath:logPath];
+        [fileHandle seekToEndOfFile];
+        [fileHandle writeData:[logMessage dataUsingEncoding:NSUTF8StringEncoding]];
+        [fileHandle closeFile];
+    } else {
+        [logMessage writeToFile:logPath atomically:YES encoding:NSUTF8StringEncoding error:nil];
+    }
+}
+
+__attribute__((constructor)) static void init() {
+    @try {
+        NSLog(@"[Spotifyy] Initializing tweak...");
+
+        // Initialize Orion - do not remove this line.
+        orion_init();
+
+        NSLog(@"[Spotifyy] Tweak initialized successfully");
+        // Custom initialization code goes here.
+    }
+    @catch (NSException *exception) {
+        NSString *errorMsg = [NSString stringWithFormat:@"ERROR: Failed to initialize tweak: %@, Reason: %@", exception, [exception reason]];
+        NSLog(@"[Spotifyy] %@", errorMsg);
+        writeDebugLog(errorMsg);
+    }
+}

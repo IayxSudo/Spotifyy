@@ -1,0 +1,9 @@
+Package: com.spotifyy.spotifyy
+Name: Spotifyy
+Version: 6.7.0
+Architecture: iphoneos-arm
+Description: A tweak to get Spotify Premium for free, just like Spotilife
+Maintainer: jaydenjcpy
+Author: Spotifyy
+Section: Tweaks
+Depends: ${ORION}, firmware (>= 14.0)
