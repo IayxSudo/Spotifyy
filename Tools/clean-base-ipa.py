@@ -29,6 +29,7 @@ Usage:
 
 import argparse
 import os
+import re
 import struct
 import sys
 import zipfile
@@ -87,9 +88,19 @@ DYLIB_LOAD_CMDS = frozenset((
 WEAK_LOAD_CMD = LC_LOAD_WEAK_DYLIB | LC_REQ_DYLD
 
 
+# Our own placeholder from an earlier run: a path of nothing but underscores.
+# Recognising it keeps the tool idempotent and repairs a base that was cleaned
+# by an older version, whose shorter replacement left free space in the header.
+LEGACY_PLACEHOLDER = re.compile(r"^/_{2,}\.dylib$")
+
+
 def is_stale_dylib(name):
     base = os.path.basename(name)
-    return base.endswith(".dylib") and base[: -len(".dylib")] in STALE_STEMS
+    if not base.endswith(".dylib"):
+        return False
+    if base[: -len(".dylib")] in STALE_STEMS:
+        return True
+    return bool(LEGACY_PLACEHOLDER.match("/" + base))
 
 
 def stale_bundle_component(name):
