@@ -27,4 +27,3 @@ control   text eol=lf
 *.icns binary
 
 # Extensionless prebuilt uploader (Mach-O).
-Tools/TelegramUploadSpotifyy binary
