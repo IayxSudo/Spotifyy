@@ -103,9 +103,11 @@ jobs:
       - name: Strip any tweak already baked into the base IPA
         if: ${{ inputs.ipa_url != '' }}
         run: |
-          # Sideloadable Spotify IPAs are usually already patched (EeveeSpotify
-          # and friends). Loading Spotifyy on top of one of those runs two
-          # copies of the same tweak in a single process.
+          # Sideloadable Spotify IPAs are usually already patched, and loading
+          # Spotifyy on top of one of those runs two copies of the same tweak in
+          # a single process. The same pass also clears what the pre-patch left
+          # elsewhere in the bundle: its entries in the code-signing manifest,
+          # and its name plus handoff URL in the OpenSpotify Safari extension.
           python3 Tools/clean-base-ipa.py ${{ github.workspace }}/spotify.ipa
 
       #- name: Build zxPluginsInject.dylib

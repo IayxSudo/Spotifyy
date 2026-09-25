@@ -11,6 +11,14 @@ This removes the stale pieces:
 
   * Payload/<app>/Frameworks/<Tweak>.dylib and any <Tweak>.bundle
   * the matching LC_LOAD_DYLIB entries in every Mach-O in the bundle
+  * the tweak's entries in the code-signing manifest (_CodeSignature/CodeResources)
+  * its name left in the OpenSpotify Safari extension, including the URL it
+    hands pages back with, and its localised description text
+
+That last group matters for more than tidiness: the extension hands a page back
+to the app as spotify://<host>/<path> and the tweak decides whether to accept it
+by comparing that host, so a base patched by a differently-named tweak sends a
+host the injected Spotifyy does not recognise and the handoff does nothing.
 
 Load commands are not deleted (that would mean rewriting the whole Mach-O and
 every file offset in it). They are downgraded to LC_LOAD_WEAK_DYLIB instead,
@@ -28,7 +36,9 @@ Usage:
 """
 
 import argparse
+import json
 import os
+import plistlib
 import re
 import struct
 import sys
@@ -88,6 +98,31 @@ DYLIB_LOAD_CMDS = frozenset((
 WEAK_LOAD_CMD = LC_LOAD_WEAK_DYLIB | LC_REQ_DYLD
 
 
+# The upstream tweak's name, where it survives outside the files we delete.
+LEGACY_NAME = b"EeveeSpotify"
+
+# Any case-insensitive "eevee", used only to report what is left behind.
+LEGACY_ANYWHERE = re.compile(rb"eevee", re.I)
+
+# _CodeSignature/CodeResources lists every file in the bundle, so a base that
+# was patched before names the tweak we just deleted.
+CODE_SIGN_MANIFEST = "_CodeSignature/CodeResources"
+
+# The OpenSpotify Safari extension hands a page back to the app as
+# spotify://<host>/<path>, and our tweak accepts it only when <host> is ours
+# (see URL.isOpenSpotifySafariExtension). A base patched by the upstream tweak
+# still sends upstream's host, so the handoff is silently ignored there. Point
+# it at our host whatever the base shipped.
+LEGACY_HANDOFF = re.compile(rb"spotify://[A-Za-z0-9._-]+/")
+OUR_HANDOFF = b"spotify://spotifyy/"
+
+# Sentences are split on punctuation followed by whitespace, so a version number
+# like "3.1" inside one stays part of that sentence instead of ending it.
+SENTENCE_BREAK = re.compile(r"(?<=[.!?])\s+")
+
+# Only these can be rewritten as text without risking a binary payload.
+TEXT_SUFFIXES = (".js", ".json", ".html", ".htm")
+
 # Our own placeholder from an earlier run: a path of nothing but underscores.
 # Recognising it keeps the tool idempotent and repairs a base that was cleaned
 # by an older version, whose shorter replacement left free space in the header.
@@ -113,6 +148,112 @@ def stale_bundle_component(name):
 
 def looks_like_macho(data):
     return len(data) >= 4 and struct.unpack_from("<I", data, 0)[0] in MACHO_MAGICS
+
+
+def scrub_codesign(data):
+    """Drop code-signing keys for the payloads we removed.
+
+    The signature is void the moment anything is injected - Sideloadly, AltStore
+    and TrollStore all re-sign or bypass it - so removing keys for files that no
+    longer exist cannot make the bundle less installable, and it stops the
+    manifest from listing the upstream tweak.
+
+    Returns (new bytes, notes).
+    """
+    try:
+        manifest = plistlib.loads(data)
+    except Exception:
+        return data, []
+    if not isinstance(manifest, dict):
+        return data, []
+
+    dropped = 0
+    for section in ("files", "files2"):
+        entries = manifest.get(section)
+        if not isinstance(entries, dict):
+            continue
+        stale_keys = [k for k in entries if is_stale_dylib(k) or stale_bundle_component(k)]
+        for key in stale_keys:
+            del entries[key]
+        dropped += len(stale_keys)
+
+    if not dropped:
+        return data, []
+
+    newdata = plistlib.dumps(manifest, fmt=plistlib.FMT_BINARY, sort_keys=False)
+    return newdata, ["dropped %d stale key(s) from %s" % (dropped, CODE_SIGN_MANIFEST)]
+
+
+def scrub_message(message):
+    """Drop sentences naming the upstream tweak, rename any other mention.
+
+    The extension's description is "Displays an Open in Spotify alert for
+    sideloaded Spotify. Requires EeveeSpotify 3.1 or newer." - the second half is
+    a stale version gate, so the sentence goes rather than being reworded.
+    """
+    kept = [s for s in SENTENCE_BREAK.split(message) if "EeveeSpotify" not in s]
+    cleaned = " ".join(kept).strip()
+    if not cleaned:
+        cleaned = message.replace("EeveeSpotify", "Spotifyy")
+    return cleaned
+
+
+def scrub_text(name, data):
+    """Repoint the Safari-extension handoff, rename leftover upstream text.
+
+    Returns (new bytes, notes).
+    """
+    notes = []
+    basename = name.rsplit("/", 1)[-1]
+
+    if basename == "content.js":
+        data, count = LEGACY_HANDOFF.subn(OUR_HANDOFF, data)
+        if count:
+            notes.append("pointed %d OpenSpotify handoff URL(s) at %s"
+                         % (count, OUR_HANDOFF.decode()))
+
+    if "/_locales/" in name and basename.endswith(".json"):
+        try:
+            table = json.loads(data.decode("utf-8"))
+        except Exception:
+            table = None
+        if isinstance(table, dict):
+            rewrote = 0
+            for entry in table.values():
+                if not isinstance(entry, dict):
+                    continue
+                message = entry.get("message")
+                if isinstance(message, str) and "EeveeSpotify" in message:
+                    entry["message"] = scrub_message(message)
+                    rewrote += 1
+            if rewrote:
+                data = (json.dumps(table, indent=4, ensure_ascii=False)
+                        + "\n").encode("utf-8")
+                notes.append("rewrote %d localised extension string(s) in %s"
+                             % (rewrote, basename))
+
+    # Anything else that still spells the name out and can safely be treated as
+    # text. Mach-O is never rewritten here: a shorter string would move every
+    # offset after it, and a load path is already handled by patch_macho.
+    if LEGACY_NAME in data and name.endswith(TEXT_SUFFIXES):
+        data, count = re.subn(b"EeveeSpotify", b"Spotifyy", data)
+        notes.append("renamed %d leftover upstream name(s) in %s" % (count, basename))
+
+    return data, notes
+
+
+def scrub(name, data):
+    """Apply the base-level scrubs that are not Mach-O edits."""
+    if name.endswith(CODE_SIGN_MANIFEST):
+        return scrub_codesign(data)
+    return scrub_text(name, data)
+
+
+def track_leftovers(name, data, leftovers):
+    """Record anything still naming the upstream tweak, for the report."""
+    count = len(LEGACY_ANYWHERE.findall(data))
+    if count:
+        leftovers.append((name, count))
 
 
 def exact_length_path(room):
@@ -206,6 +347,8 @@ def clean(src, dst):
     """Copy src to dst, dropping stale tweak payloads. Returns a report dict."""
     removed = []
     patched = []
+    scrubbed = []
+    leftovers = []
     copied = 0
 
     with zipfile.ZipFile(src, "r") as zin:
@@ -220,12 +363,21 @@ def clean(src, dst):
                 data = zin.read(info)
                 copied += 1
 
-                if not info.is_dir() and looks_like_macho(data):
+                if info.is_dir():
+                    pass
+                elif looks_like_macho(data):
                     res, newdata = patch_macho(data)
                     if res["matched"]:
                         res["file"] = name
                         patched.append(res)
                         data = newdata
+                else:
+                    newdata, notes = scrub(name, data)
+                    scrubbed += ["%s: %s" % (name, note) for note in notes]
+                    data = newdata
+
+                if not info.is_dir():
+                    track_leftovers(name, data, leftovers)
 
                 # Reuse the original ZipInfo so symlink bits, file modes and
                 # timestamps survive the copy. writestr fills in CRC and sizes.
@@ -233,13 +385,16 @@ def clean(src, dst):
                     info.compress_type = zipfile.ZIP_DEFLATED
                 zout.writestr(info, data)
 
-    return {"removed": removed, "patched": patched, "copied": copied}
+    return {"removed": removed, "patched": patched, "scrubbed": scrubbed,
+            "leftovers": leftovers, "copied": copied}
 
 
 def inspect(src):
     """Report what a clean would do, without writing anything."""
     removed = []
     patched = []
+    scrubbed = []
+    leftovers = []
     with zipfile.ZipFile(src, "r") as zin:
         for info in zin.infolist():
             name = info.filename
@@ -250,11 +405,18 @@ def inspect(src):
                 continue
             data = zin.read(info)
             if looks_like_macho(data):
-                res, _ = patch_macho(data)
+                res, newdata = patch_macho(data)
                 if res["matched"]:
                     res["file"] = name
                     patched.append(res)
-    return {"removed": removed, "patched": patched, "copied": 0}
+                    data = newdata
+            else:
+                newdata, notes = scrub(name, data)
+                scrubbed += ["%s: %s" % (name, note) for note in notes]
+                data = newdata
+            track_leftovers(name, data, leftovers)
+    return {"removed": removed, "patched": patched, "scrubbed": scrubbed,
+            "leftovers": leftovers, "copied": 0}
 
 
 def report(res):
@@ -279,10 +441,20 @@ def report(res):
             print("[clean-base] warning: could not repoint %s in %s, weakened only"
                   % (h, entry["file"]))
 
-    if not dylibs and not res["patched"] and not res["removed"]:
+    for note in res["scrubbed"]:
+        print("[clean-base] %s" % note)
+
+    leftovers = res.get("leftovers", [])
+    for name, count in leftovers:
+        print("[clean-base] warning: %s still names the upstream tweak (%d occurrence(s))"
+              % (name, count))
+    if res["scrubbed"] and not leftovers:
+        print("[clean-base] no upstream name left anywhere in the bundle")
+
+    if not dylibs and not res["patched"] and not res["removed"] and not res["scrubbed"]:
         print("[clean-base] nothing to strip - base already clean")
 
-    return bool(dylibs or res["removed"] or res["patched"])
+    return bool(dylibs or res["removed"] or res["patched"] or res["scrubbed"])
 
 
 def main(argv=None):

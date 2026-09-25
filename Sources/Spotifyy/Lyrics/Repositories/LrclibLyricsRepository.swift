@@ -110,7 +110,7 @@ class LrclibLyricsRepository: LyricsRepository {
         
         let configuration = URLSessionConfiguration.ephemeral
         configuration.httpAdditionalHeaders = [
-            "User-Agent": "Spotifyy v\(Spotifyy.version) https://github.com/whoeevee/EeveeSpotify"
+            "User-Agent": "Spotifyy v\(Spotifyy.version) https://github.com/IayxSudo/Spotifyy"
         ]
         // FIX: 4 seconds is far too short — LRCLIB can be slow to respond,
         // and the IPv4-direct attempt + fallback each consumed the full 4s in
@@ -169,7 +169,7 @@ class LrclibLyricsRepository: LyricsRepository {
         }
 
         request.setValue(
-            "Spotifyy v\(Spotifyy.version) https://github.com/whoeevee/EeveeSpotify",
+            "Spotifyy v\(Spotifyy.version) https://github.com/IayxSudo/Spotifyy",
             forHTTPHeaderField: "User-Agent"
         )
 
@@ -193,7 +193,7 @@ class LrclibLyricsRepository: LyricsRepository {
             let fallbackSemaphore = DispatchSemaphore(value: 0)
             var fallbackRequest = URLRequest(url: url)
             fallbackRequest.setValue(
-                "Spotifyy v\(Spotifyy.version) https://github.com/whoeevee/EeveeSpotify",
+                "Spotifyy v\(Spotifyy.version) https://github.com/IayxSudo/Spotifyy",
                 forHTTPHeaderField: "User-Agent"
             )
 

@@ -12,6 +12,9 @@
 #   4. clean-base-ipa.py strips any tweak already baked into the base IPA —
 #      sideloadable Spotify IPAs are usually pre-patched, and loading Spotifyy
 #      on top of one of those runs two copies of the same tweak in one process.
+#      It also clears that tweak's leftovers elsewhere in the bundle: its
+#      entries in the code-signing manifest, and its name and handoff URL in
+#      the OpenSpotify Safari extension.
 #   5. cyan inject deb-contents (dylib + framework + bundle) into vanilla IPA.
 #   6. ipapatch LC-inject zxPluginsInject into main exec + every appex.
 #   7. Strip Watch.app if it survived cyan -du.
