@@ -29,10 +29,19 @@ Everything else is copied byte-for-byte, including symlink entries and file
 modes, so the result is an ordinary IPA that cyan / ipapatch / Sideloadly can
 consume.
 
+The same script also has a second, narrower job. The OpenSpotify Safari
+Extension is cloned from a third-party repository and injected *after* this strip,
+so the branding it carries can only be cleared once the IPA is finished. That is
+what --scrub-only is for: no payload is deleted and no load command is touched,
+which it must not be, because by then the bundle holds the Spotifyy.dylib we
+just injected and STALE_STEMS would match it.
+
 Usage:
     python3 Tools/clean-base-ipa.py Spotify.ipa             # rewrite in place
     python3 Tools/clean-base-ipa.py -o clean.ipa dirty.ipa
     python3 Tools/clean-base-ipa.py --check dirty.ipa       # report only
+    python3 Tools/clean-base-ipa.py --scrub-only built.ipa  # branding only
+    python3 Tools/clean-base-ipa.py --scrub-only --check built.ipa
 """
 
 import argparse
@@ -343,8 +352,16 @@ def patch_macho(data):
             "unrewritten": unrewritten}, bytes(buf)
 
 
-def clean(src, dst):
-    """Copy src to dst, dropping stale tweak payloads. Returns a report dict."""
+def clean(src, dst, scrub_only=False):
+    """Copy src to dst, dropping stale tweak payloads. Returns a report dict.
+
+    scrub_only leaves the payload exactly as it is - nothing removed, no load
+    command rewritten - and only clears branding, which is what a finished IPA
+    can take. It exists because the OpenSpotify appex is injected from a
+    third-party repository after the strip: its leftovers can only be cleared
+    afterwards, and by then STALE_STEMS would match the Spotifyy.dylib the strip
+    is supposed to protect.
+    """
     removed = []
     patched = []
     scrubbed = []
@@ -356,7 +373,7 @@ def clean(src, dst):
             for info in zin.infolist():
                 name = info.filename
 
-                if is_stale_dylib(name) or stale_bundle_component(name):
+                if not scrub_only and (is_stale_dylib(name) or stale_bundle_component(name)):
                     removed.append(name)
                     continue
 
@@ -366,11 +383,12 @@ def clean(src, dst):
                 if info.is_dir():
                     pass
                 elif looks_like_macho(data):
-                    res, newdata = patch_macho(data)
-                    if res["matched"]:
-                        res["file"] = name
-                        patched.append(res)
-                        data = newdata
+                    if not scrub_only:
+                        res, newdata = patch_macho(data)
+                        if res["matched"]:
+                            res["file"] = name
+                            patched.append(res)
+                            data = newdata
                 else:
                     newdata, notes = scrub(name, data)
                     scrubbed += ["%s: %s" % (name, note) for note in notes]
@@ -389,7 +407,7 @@ def clean(src, dst):
             "leftovers": leftovers, "copied": copied}
 
 
-def inspect(src):
+def inspect(src, scrub_only=False):
     """Report what a clean would do, without writing anything."""
     removed = []
     patched = []
@@ -398,18 +416,19 @@ def inspect(src):
     with zipfile.ZipFile(src, "r") as zin:
         for info in zin.infolist():
             name = info.filename
-            if is_stale_dylib(name) or stale_bundle_component(name):
+            if not scrub_only and (is_stale_dylib(name) or stale_bundle_component(name)):
                 removed.append(name)
                 continue
             if info.is_dir():
                 continue
             data = zin.read(info)
             if looks_like_macho(data):
-                res, newdata = patch_macho(data)
-                if res["matched"]:
-                    res["file"] = name
-                    patched.append(res)
-                    data = newdata
+                if not scrub_only:
+                    res, newdata = patch_macho(data)
+                    if res["matched"]:
+                        res["file"] = name
+                        patched.append(res)
+                        data = newdata
             else:
                 newdata, notes = scrub(name, data)
                 scrubbed += ["%s: %s" % (name, note) for note in notes]
@@ -463,6 +482,10 @@ def main(argv=None):
     ap.add_argument("-o", "--output", help="write here instead of in place")
     ap.add_argument("--check", action="store_true",
                     help="report what would be stripped, write nothing")
+    ap.add_argument("--scrub-only", action="store_true",
+                    help="clear leftover upstream branding only: no payload is "
+                         "removed and no load command is rewritten, so this is "
+                         "safe to run over a finished IPA")
     args = ap.parse_args(argv)
 
     src = args.ipa
@@ -471,12 +494,12 @@ def main(argv=None):
         return 1
 
     if args.check:
-        found = report(inspect(src))
+        found = report(inspect(src, scrub_only=args.scrub_only))
         print("[clean-base] check only, nothing written")
         return 0 if found else 0
 
     dst = args.output or (src + ".cleaned")
-    res = clean(src, dst)
+    res = clean(src, dst, scrub_only=args.scrub_only)
     report(res)
 
     if not args.output:
