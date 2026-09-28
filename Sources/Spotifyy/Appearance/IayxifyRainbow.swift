@@ -1,15 +1,18 @@
+import SwiftUI
 import UIKit
 
 /// Animated rainbow for Iayxify's own name on Spotify's native screens.
 ///
 /// Spotify draws the plan name we inject ("Iayxify") itself, so the only handle
-/// we get is the rendered view. This walks a view tree for labels whose text is
-/// exactly the brand name and masks them with a gradient that rotates around
-/// the label, which is what makes the colour appear to spin.
+/// we get is the rendered view. Two paths exist:
 ///
-/// If Spotify renders that name as SwiftUI text there is no `UILabel` to mask
-/// and `decorate` simply finds nothing — the plan payload's fallback colour is
-/// used instead.
+/// - `decorate(_:)` walks a view tree for text labels whose text is exactly the
+///   brand name and masks them with a gradient that rotates around the label,
+///   which is what makes the colour appear to spin.
+/// - `decorateBadge(in:)` covers the case where there is no label at all: some
+///   of Spotify's badges draw their text with an Element component. Those are
+///   found by the colour we put in the badge payload — the one signal that is
+///   ours and stable — and repainted with a masked label on top.
 enum IayxifyRainbow {
     /// Text the badge and plan rows are given. Only labels matching this are
     /// touched, so the effect can't leak onto Spotify's own copy.
@@ -33,9 +36,28 @@ enum IayxifyRainbow {
     /// pointless amount of interpolation work.
     private static let spinSteps = 24
 
+    /// Tag on the repaint view `decorateBadge(in:)` adds. Prefixed so it can't
+    /// collide with the entry points' 1337-1340 range.
+    private static let overlayTag = 1341
+
+    /// Minimum time between fruitless searches: a layout pass must not turn a
+    /// full window walk into a per-frame cost. A live label or badge is reused
+    /// without waiting, so only the "nothing to decorate" case is throttled.
+    private static let rescanInterval: CFTimeInterval = 0.5
+
     /// Last label we decorated, so the layout pass doesn't re-walk the view tree
     /// on every frame. Weak: the label belongs to Spotify's view hierarchy.
     private static weak var cachedLabel: UILabel?
+    /// Colour the label had before we took it over, so switching the feature off
+    /// puts Spotify's own colour back instead of leaving white text behind.
+    private static var cachedLabelColor: UIColor?
+
+    /// Last badge we repainted, so a live one isn't searched for again.
+    private static weak var cachedPill: UIView?
+    private static var lastBadgeScan: CFTimeInterval = 0
+    private static var lastLabelScan: CFTimeInterval = 0
+
+    // MARK: - Text labels
 
     /// Applies the animated rainbow to the brand name under `root`.
     ///
@@ -51,14 +73,25 @@ enum IayxifyRainbow {
             return
         }
 
-        if let cached = cachedLabel, cached.window != nil, cached.isDescendant(of: root) {
-            // Still on screen and still inside this page: just re-size the mask.
+        if let cached = cachedLabel, isUsable(cached, in: root) {
+            // Still on screen, still inside this root and still showing our
+            // name: just re-size the mask. The text check matters because these
+            // are recycled cells — a label we colourised can later be handed to
+            // a different row.
             apply(to: cached)
             return
         }
 
+        let now = CACurrentMediaTime()
+        guard now - lastLabelScan >= rescanInterval else { return }
+        lastLabelScan = now
+
         guard let label = firstBrandLabel(in: root) else { return }
         apply(to: label)
+    }
+
+    private static func isUsable(_ label: UILabel, in root: UIView) -> Bool {
+        label.text == brandName && label.window != nil && label.isDescendant(of: root)
     }
 
     /// Walks the tree breadth-first — the name is usually near the top of these
@@ -70,7 +103,7 @@ enum IayxifyRainbow {
             var next: [UIView] = []
 
             for view in queue {
-                if let label = view as? UILabel, label.text == brandName {
+                if let label = view as? UILabel, label.text == brandName, hasClearBackground(label) {
                     return label
                 }
                 next.append(contentsOf: view.subviews)
@@ -82,7 +115,19 @@ enum IayxifyRainbow {
         return nil
     }
 
+    /// Only text-only labels can be masked: the mask replaces every pixel the
+    /// layer draws, so a label that paints its own pill background would turn
+    /// into a solid rainbow bar with the letters swallowed by it. Those are
+    /// handled by `decorateBadge(in:)` instead.
+    private static func hasClearBackground(_ label: UILabel) -> Bool {
+        guard let background = label.backgroundColor else { return true }
+        return background.cgColor.alpha < 0.02
+    }
+
     static func apply(to label: UILabel) {
+        if cachedLabel !== label {
+            cachedLabelColor = label.textColor
+        }
         label.textColor = .white
         cachedLabel = label
 
@@ -108,15 +153,114 @@ enum IayxifyRainbow {
     }
 
     /// Removes the mask so a recycled label goes back to normal text.
-    ///
-    /// Only needed when the feature is switched off while the label is on
-    /// screen: the gradient mask is what gives the text its colour, so the
-    /// label is left with the opaque colour `apply` set until Spotify rebuilds
-    /// it. Purely cosmetic and rare.
     static func clear(_ label: UILabel) {
-        guard let mask = label.layer.mask as? CAGradientLayer, mask.name == maskName else { return }
-        label.layer.mask = nil
+        if let mask = label.layer.mask as? CAGradientLayer, mask.name == maskName {
+            label.layer.mask = nil
+        }
+        label.textColor = cachedLabelColor ?? .white
+        cachedLabelColor = nil
     }
+
+    // MARK: - Badges that aren't labels
+
+    /// Repaints a badge whose text Spotify draws without a label.
+    ///
+    /// The badge is identified by the colour written into the plan payload
+    /// (`SpotifyyAppearance.planAccentHex`) — deliberately a colour Spotify
+    /// itself never uses for these pills, so finding it means the pill is ours.
+    static func decorateBadge(in root: UIView?) {
+        guard let root = root else { return }
+
+        guard SpotifyyAppearance.options.rainbowPremiumName else {
+            cachedPill?.viewWithTag(overlayTag)?.removeFromSuperview()
+            cachedPill = nil
+            return
+        }
+
+        if let cached = cachedPill, cached.window != nil, cached.isDescendant(of: root) {
+            return
+        }
+        cachedPill = nil
+
+        // Nothing to do when a real label carries the name: masking that is
+        // better than covering Spotify's text with our own.
+        if firstBrandLabel(in: root) != nil { return }
+
+        guard let pill = brandBadge(in: root) else { return }
+        cachedPill = pill
+        guard pill.viewWithTag(overlayTag) == nil else { return }
+
+        let cover = UIView(frame: pill.bounds)
+        cover.tag = overlayTag
+        cover.backgroundColor = pill.backgroundColor
+        cover.layer.cornerRadius = pill.layer.cornerRadius
+        cover.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+
+        let label = UILabel(frame: cover.bounds)
+        label.text = brandName
+        label.textAlignment = .center
+        label.font = .systemFont(ofSize: max(11, pill.bounds.height * 0.58), weight: .bold)
+        label.adjustsFontSizeToFitWidth = true
+        label.minimumScaleFactor = 0.6
+        label.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        cover.addSubview(label)
+
+        pill.addSubview(cover)
+        apply(to: label)
+    }
+
+    /// Finds our own badge pill: small, rounded, and painted in the plan colour
+    /// we chose. Throttled, because a miss means walking the whole window.
+    private static func brandBadge(in root: UIView) -> UIView? {
+        let now = CACurrentMediaTime()
+        guard now - lastBadgeScan >= rescanInterval else { return nil }
+        lastBadgeScan = now
+
+        let target = UIColor(Color(hex: SpotifyyAppearance.planAccentHex))
+        var found: UIView?
+
+        var queue: [UIView] = [root]
+        while !queue.isEmpty, found == nil {
+            var next: [UIView] = []
+
+            for view in queue where view.tag != overlayTag {
+                if isPlanColoured(view, target: target) {
+                    found = view
+                    break
+                }
+                next.append(contentsOf: view.subviews)
+            }
+
+            queue = next
+        }
+
+        return found
+    }
+
+    private static func isPlanColoured(_ view: UIView, target: UIColor) -> Bool {
+        let bounds = view.bounds
+        guard bounds.height >= 16, bounds.height <= 36,
+              bounds.width >= 26, bounds.width <= 180,
+              let background = view.backgroundColor,
+              background.cgColor.alpha > 0.9 else {
+            return false
+        }
+
+        var tr: CGFloat = 0, tg: CGFloat = 0, tb: CGFloat = 0, ta: CGFloat = 0
+        var vr: CGFloat = 0, vg: CGFloat = 0, vb: CGFloat = 0, va: CGFloat = 0
+        guard target.getRed(&tr, green: &tg, blue: &tb, alpha: &ta),
+              background.getRed(&vr, green: &vg, blue: &vb, alpha: &va) else {
+            return false
+        }
+
+        // A loose match on purpose: Spotify may blend the colour with the row it
+        // sits in (dark mode, pressed states), and nothing else in the app is
+        // this magenta-pink.
+        let tolerance: CGFloat = 0.09
+        return abs(tr - vr) < tolerance && abs(tg - vg) < tolerance && abs(tb - vb) < tolerance
+    }
+
+    // MARK: - Animation
 
     private static func startSpinIfNeeded(_ gradient: CAGradientLayer) {
         guard gradient.animation(forKey: spinKey) == nil else { return }

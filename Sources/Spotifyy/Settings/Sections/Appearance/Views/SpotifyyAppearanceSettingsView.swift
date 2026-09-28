@@ -97,6 +97,16 @@ struct SpotifyyAppearanceSettingsView: View {
                 }
 
                 Toggle(isOn: Binding(
+                    get: { options.showSideDrawerEntry },
+                    set: { newValue in
+                        options.showSideDrawerEntry = newValue
+                        commit(debounced: false)
+                    }
+                )) {
+                    Text("theme_option_sidebar_entry".localized)
+                }
+
+                Toggle(isOn: Binding(
                     get: { options.applyTintToSpotifyControls },
                     set: { newValue in
                         options.applyTintToSpotifyControls = newValue
@@ -257,6 +267,7 @@ struct SpotifyyAppearanceSettingsView: View {
             && options.applyTintToSpotifyControls
             && options.rainbowPremiumName
             && options.premiumPageSettingsEntry
+            && options.showSideDrawerEntry
     }
 
     private func select(_ theme: IayxifyTheme) {

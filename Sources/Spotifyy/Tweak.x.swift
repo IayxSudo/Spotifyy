@@ -316,6 +316,11 @@ struct Spotifyy: Tweak {
         // Spotify version.
         activateIayxifyPremiumPageExtras()
 
+        // Same two things one level out: the side drawer is where the "Your
+        // Premium" row actually shows the badge, so it needs the rainbow too,
+        // plus its own entry into Iayxify settings.
+        activateIayxifySideDrawerExtras()
+
         // Activate session logout protection first.
         // NOTE: On some Spotify 9.1.x builds, Orion can still crash even if a selector exists
         // (e.g., method type encoding changes). Be conservative for 9.1.x.

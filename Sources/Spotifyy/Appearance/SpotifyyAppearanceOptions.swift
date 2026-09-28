@@ -145,6 +145,11 @@ struct SpotifyyAppearanceOptions: Codable {
     /// Adds the "Iayxify Settings" entry to that same page.
     var premiumPageSettingsEntry: Bool = true
 
+    /// Adds an "Iayxify Settings" row to Spotify's side drawer, next to
+    /// Settings and privacy. That panel is the usual way in, so this defaults to
+    /// on even though the Your Premium page entry exists as well.
+    var showSideDrawerEntry: Bool = true
+
     /// Hand-written so a blob written by an older build (missing the newer
     /// keys) still decodes instead of silently resetting the user's theme.
     init() { }
@@ -159,6 +164,8 @@ struct SpotifyyAppearanceOptions: Codable {
             (try? container.decode(Bool.self, forKey: .rainbowPremiumName)) ?? true
         premiumPageSettingsEntry =
             (try? container.decode(Bool.self, forKey: .premiumPageSettingsEntry)) ?? true
+        showSideDrawerEntry =
+            (try? container.decode(Bool.self, forKey: .showSideDrawerEntry)) ?? true
     }
 }
 
