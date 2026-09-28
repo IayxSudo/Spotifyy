@@ -45,7 +45,12 @@ jobs:
 
       - name: Download IPA
         run: |
-          wget "${{ inputs.ipa_url }}" --no-verbose -O ${{ github.workspace }}/spotify.ipa
+          # See buildpatched.yml: curl retries the DNS/connect failures that a
+          # redirect to filebin's storage host can hit.
+          curl --fail --location --silent --show-error \
+               --retry 5 --retry-delay 5 --retry-all-errors \
+               --connect-timeout 20 --max-time 1800 \
+               -o ${{ github.workspace }}/spotify.ipa "${{ inputs.ipa_url }}"
           file_type=$(file --mime-type -b ${{ github.workspace }}/spotify.ipa)
           if [[ "$file_type" != "application/x-ios-app" && "$file_type" != "application/zip" ]]; then
             echo "::error::Not a valid IPA: $file_type"; exit 1
@@ -53,7 +58,10 @@ jobs:
 
       - name: Download .deb
         run: |
-          wget "${{ inputs.tweak_url }}" --no-verbose -O ${{ github.workspace }}/spotifyy.deb
+          curl --fail --location --silent --show-error \
+               --retry 5 --retry-delay 5 --retry-all-errors \
+               --connect-timeout 20 --max-time 1800 \
+               -o ${{ github.workspace }}/spotifyy.deb "${{ inputs.tweak_url }}"
           file_type=$(file --mime-type -b ${{ github.workspace }}/spotifyy.deb)
           if [[ "$file_type" != "application/vnd.debian.binary-package" ]]; then
             echo "::error::Not a valid .deb: $file_type"; exit 1
