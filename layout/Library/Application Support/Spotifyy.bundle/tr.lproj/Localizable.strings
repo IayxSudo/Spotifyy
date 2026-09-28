@@ -23,7 +23,7 @@ restart_is_required_description = "Değişikliklerin etkili olması için uygula
 // Patching
 
 do_not_patch_premium = "Premium'u Yamama";
-patching_description = "Spotifyy, kullanıcı verilerini yükleme isteklerini yakalar, ayrıştırır ve parametreleri gerçek zamanlı olarak değiştirir.
+patching_description = "Iayxify, kullanıcı verilerini yükleme isteklerini yakalar, ayrıştırır ve parametreleri gerçek zamanlı olarak değiştirir.
 
 Aktif bir Premium aboneliğiniz varsa \"Premium'u Yamama\" seçeneğini açabilirsiniz. Tweak verileri yamamaz ve sunucu taraflı Premium özelliklerinin kullanımını kısıtlamaz.
 
@@ -46,7 +46,7 @@ Genius: En kaliteli şarkı sözlerini sunar, en fazla şarkıyı barındırır 
 LRCLIB: Zaman senkronizeli şarkı sözleri sunan en açık servistir. Ancak birçok şarkı için sözleri eksiktir.
 
 Musixmatch: Spotify'ın kullandığı servistir. Birçok şarkı için zaman senkronizeli sözler sağlar, ancak bu kaynağı kullanmak için bir kullanıcı jetonuna ihtiyacınız vardır.";
-lyrics_additional_info = "Spotifyy bir şarkıyı bulamazsa veya sözleri işleyemezse \"Bu şarkı için şarkı sözleri yüklenemedi\" mesajını görürsünüz. Genius kullanılırken tweak'in şarkı arama yöntemi nedeniyle bazı şarkıların sözleri yanlış olabilir. Çoğu durumda çalışacak şekilde ayarlanmıştır.";
+lyrics_additional_info = "Iayxify bir şarkıyı bulamazsa veya sözleri işleyemezse \"Bu şarkı için şarkı sözleri yüklenemedi\" mesajını görürsünüz. Genius kullanılırken tweak'in şarkı arama yöntemi nedeniyle bazı şarkıların sözleri yanlış olabilir. Çoğu durumda çalışacak şekilde ayarlanmıştır.";
 petitlyrics_description = "PetitLyrics: Bol miktarda zaman senkronizeli Japonca ve bazı uluslararası şarkı sözleri sunar.";
 
 musixmatch_user_token = "Musixmatch Kullanıcı Jetonu";
@@ -102,7 +102,7 @@ clean_share_links_description = "Paylaşılan Spotify bağlantılarından \"si\"
 
 /* MARK: Premium PopUps */
 
-have_premium_popup = "Aktif bir Premium aboneliğiniz var gibi görünüyor, bu nedenle tweak verileri yamamayacak veya sunucu taraflı Premium özelliklerinin kullanımını kısıtlamayacaktır. Bunu Spotifyy ayarlarından yönetebilirsiniz.";
+have_premium_popup = "Aktif bir Premium aboneliğiniz var gibi görünüyor, bu nedenle tweak verileri yamamayacak veya sunucu taraflı Premium özelliklerinin kullanımını kısıtlamayacaktır. Bunu Iayxify ayarlarından yönetebilirsiniz.";
 
 high_audio_quality_popup = "Çok yüksek ses kalitesi sunucu taraflıdır ve bu tweak ile kullanılamaz.";
 playlist_downloading_popup = "Çalma listesi indirme sunucu taraflıdır ve bu tweak ile kullanılamaz. Ancak podcast bölümlerini ve yerel çalma listelerini indirebilirsiniz.";
@@ -151,7 +151,7 @@ ad_free_music_listening = "Reklamsız müzik dinleme";
 play_songs_in_any_order = "Şarkıları istediğin sırayla çal";
 organize_listening_queue = "Dinleme sırasını düzenle";
 
-payment_notice = "Spotifyy, bazı Premium özelliklerin kilidini açmak için yamalar uygular. Ücretsizdir.";
+payment_notice = "Iayxify, bazı Premium özelliklerin kilidini açmak için yamalar uygular. Ücretsizdir.";
 
 // Debug
 

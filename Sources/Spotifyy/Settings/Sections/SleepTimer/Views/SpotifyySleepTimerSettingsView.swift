@@ -62,7 +62,7 @@ struct SpotifyySleepTimerSettingsView: View {
                                 .foregroundColor(SpotifyySettingsView.spotifyAccentColor)
                         }
                     }
-                    .foregroundColor(.white)
+                    .foregroundColor(.primary)
                 }
                 .buttonStyle(PlainButtonStyle())
             }
@@ -120,7 +120,7 @@ struct SpotifyySleepTimerSettingsView: View {
                 .frame(width: 26)
 
             Text("sleep_timer_minutes".localizeWithFormat(String(minutes)))
-                .foregroundColor(.white)
+                .foregroundColor(.primary)
 
             Spacer()
 

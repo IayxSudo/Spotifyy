@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
-# Set the home-screen app label to "Spotifyy" (CFBundleDisplayName/CFBundleName).
+# Set the home-screen app label to "Iayxify" (CFBundleDisplayName/CFBundleName).
 #   app-label.sh <Spotify.app>  # patch app dir in place
 #   app-label.sh <path.ipa>     # patch ipa in place
 #
 # Called by the IPA build script and workflows after cyan/ipapatch so the
-# sideloaded app shows "Spotifyy" on the home screen instead of "Spotify".
+# sideloaded app shows "Iayxify" on the home screen instead of "Spotify".
 
 set -euo pipefail
 
-LABEL="Spotifyy"
+LABEL="Iayxify"
 PB=/usr/libexec/PlistBuddy
 
 patch_app() {

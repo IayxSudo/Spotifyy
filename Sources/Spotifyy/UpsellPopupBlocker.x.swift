@@ -45,12 +45,15 @@ private func isUpsellText(_ text: String?) -> Bool {
     return upsellKeywords.contains { lower.contains($0) }
 }
 
-// PopUpHelper uses this title for Spotifyy's own status/error dialogs, including
+// PopUpHelper uses this title for Iayxify's own status/error dialogs, including
 // the intentional server-sided download reminder. Those are never Spotify
 // Premium upsells and must remain visible even if their localized body happens
 // to contain one of the generic keywords above.
+//
+// The old name is still accepted so dialogs queued before the rebrand (or built
+// by a stale string) are not mistaken for upsells.
 private func isSpotifyyPopupTitle(_ title: String?) -> Bool {
-    title == "Spotifyy"
+    title == PopUpHelper.popUpTitle || title == "Spotifyy"
 }
 
 private func markAsUpsell(_ object: AnyObject) {

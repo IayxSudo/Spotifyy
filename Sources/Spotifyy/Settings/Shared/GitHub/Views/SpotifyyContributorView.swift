@@ -21,7 +21,7 @@ struct SpotifyyContributorView: View {
                                     .frame(width: 20, height: 20)
                                     .clipShape(Circle())
                                 Text(nameFor(index: index, username: username))
-                                    .foregroundColor(.white)
+                                    .foregroundColor(.primary)
                                     .font(.headline)
                             }
                         }
@@ -33,7 +33,7 @@ struct SpotifyyContributorView: View {
 
                         VStack(alignment: .leading, spacing: 0) {
                             Text(contributor.displayName ?? contributor.usernames[0])
-                                .foregroundColor(.white)
+                                .foregroundColor(.primary)
                                 .font(.headline)
 
                             ForEach(contributor.roles, id: \.self) { role in

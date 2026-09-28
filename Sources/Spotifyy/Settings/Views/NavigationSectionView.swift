@@ -17,8 +17,11 @@ struct NavigationSectionView: View {
             }
             .frame(width: 30, height: 30)
             
+            // `.primary` rather than white: the light themes (Light mode, Pink
+            // Light, a light custom theme) draw these rows on a light
+            // background, where white text would disappear.
             Text(title)
-                .foregroundColor(.white)
+                .foregroundColor(.primary)
             
             Spacer()
             

@@ -154,7 +154,7 @@ jobs:
           chmod +x Tools/primary-icon.sh
           Tools/primary-icon.sh "$OUT_IPA"
 
-      - name: Set home-screen label to Spotifyy
+      - name: Set home-screen label to Iayxify
         run: |
           chmod +x Tools/app-label.sh
           Tools/app-label.sh "$OUT_IPA"

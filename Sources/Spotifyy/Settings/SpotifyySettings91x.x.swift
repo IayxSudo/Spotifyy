@@ -22,7 +22,7 @@ func showVersionBannerOnWindow(_ window: UIWindow) {
     label.textColor = .white
     label.font = UIFont.systemFont(ofSize: 13, weight: .semibold)
     label.text = """
-    🎵 Spotifyy v\(Spotifyy.version)
+    🎵 Iayxify v\(Spotifyy.version)
     Spotify \(Bundle.main.infoDictionary!["CFBundleShortVersionString"] as! String)
     Updated by Skye
     """

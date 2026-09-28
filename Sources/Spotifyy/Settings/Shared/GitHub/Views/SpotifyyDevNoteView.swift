@@ -54,7 +54,7 @@ struct SpotifyyDevNoteView: View {
             ScrollView {
                 Text(text)
                     .font(.body)
-                    .foregroundColor(.white)
+                    .foregroundColor(.primary)
                     .padding()
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
