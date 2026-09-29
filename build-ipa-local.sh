@@ -3,14 +3,14 @@
 # you can sign with Sideloadly/AltStore/TrollStore.
 #
 # Pipeline:
-#   1. Build SpotifyySwiftProtobuf.framework from apple/swift-protobuf source
+#   1. Build IayxifySwiftProtobuf.framework from apple/swift-protobuf source
 #      (renamed module — see Tools/SwiftProtobufBuild/).
 #   2. theos `make package FINALPACKAGE=1` — produces .deb with
-#      Spotifyy.dylib + Spotifyy.bundle + framework.
+#      Iayxify.dylib + Iayxify.bundle + framework.
 #   3. Build zxPluginsInject.dylib — sideload compat shim (keychain redirect,
 #      group containers, CloudKit stub). LC-injected via ipapatch in step 6.
 #   4. clean-base-ipa.py strips any tweak already baked into the base IPA —
-#      sideloadable Spotify IPAs are usually pre-patched, and loading Spotifyy
+#      sideloadable Spotify IPAs are usually pre-patched, and loading Iayxify
 #      on top of one of those runs two copies of the same tweak in one process.
 #      It also clears that tweak's leftovers elsewhere in the bundle: its
 #      entries in the code-signing manifest, and its name and handoff URL in
@@ -19,7 +19,7 @@
 #   6. ipapatch LC-inject zxPluginsInject into main exec + every appex.
 #   7. Strip Watch.app if it survived cyan -du.
 #   8. primary-icon.sh replaces the default home-screen icon.
-#   9. app-label.sh sets the home-screen label to "Spotifyy".
+#   9. app-label.sh sets the home-screen label to "Iayxify".
 #
 # Requires: theos, cyan (pyzule-rw), ipapatch, dpkg, ldid, plutil.
 
@@ -40,18 +40,18 @@ VERSION=$(grep -E '^Version:' control | awk '{print $2}')
 SPOT_VERSION=$(unzip -p "$VANILLA_IPA" 'Payload/Spotify.app/Info.plist' \
     | plutil -extract CFBundleShortVersionString raw - 2>/dev/null || echo "unknown")
 OUT_DIR="Outputs/IPAS"
-OUT_IPA="$OUT_DIR/Spotifyy-${VERSION}-${SPOT_VERSION}.ipa"
+OUT_IPA="$OUT_DIR/Iayxify-${VERSION}-${SPOT_VERSION}.ipa"
 mkdir -p "$OUT_DIR"
 
 color() { printf '\033[1;32m==> %s\033[0m\n' "$*"; }
 
-color "1/9  SpotifyySwiftProtobuf.framework"
-chmod +x Tools/SwiftProtobufBuild/build-spotifyyswiftprotobuf.sh
-Tools/SwiftProtobufBuild/build-spotifyyswiftprotobuf.sh
+color "1/9  IayxifySwiftProtobuf.framework"
+chmod +x Tools/SwiftProtobufBuild/build-iayxifyswiftprotobuf.sh
+Tools/SwiftProtobufBuild/build-iayxifyswiftprotobuf.sh
 
 color "2/9  theos make package"
 THEOS_PACKAGE_SCHEME=rootless make package FINALPACKAGE=1
-DEB_FILE=$(ls -t packages/com.spotifyy.spotifyy_*.deb 2>/dev/null | head -1)
+DEB_FILE=$(ls -t packages/com.iayxify.iayxify_*.deb 2>/dev/null | head -1)
 [ -n "$DEB_FILE" ] || { echo "deb not produced"; exit 1; }
 
 color "3/9  zxPluginsInject.dylib"
@@ -62,9 +62,9 @@ color "4/9  extract deb"
 DEB_EXTRACT="$REPO_DIR/Outputs/deb-extract"
 rm -rf "$DEB_EXTRACT"; mkdir -p "$DEB_EXTRACT"
 dpkg-deb -R "$DEB_FILE" "$DEB_EXTRACT"
-DYLIB_SRC=$(find "$DEB_EXTRACT" -name 'Spotifyy.dylib' | head -1)
-BUNDLE_SRC=$(find "$DEB_EXTRACT" -type d -name 'Spotifyy.bundle' | head -1)
-FRAMEWORK_SRC=$(find "$DEB_EXTRACT" -type d -name 'SpotifyySwiftProtobuf.framework' | head -1)
+DYLIB_SRC=$(find "$DEB_EXTRACT" -name 'Iayxify.dylib' | head -1)
+BUNDLE_SRC=$(find "$DEB_EXTRACT" -type d -name 'Iayxify.bundle' | head -1)
+FRAMEWORK_SRC=$(find "$DEB_EXTRACT" -type d -name 'IayxifySwiftProtobuf.framework' | head -1)
 [ -n "$DYLIB_SRC" ] || { echo "dylib not in deb"; exit 1; }
 
 color "5/9  strip pre-baked tweak from base IPA"

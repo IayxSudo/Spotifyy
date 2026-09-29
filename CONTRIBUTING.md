@@ -9,7 +9,7 @@ Please use the issue templates.
 - **Bug reports** go through the bug report template. It will ask for:
   - installation type (jailbreak / TrollStore / sideloaded IPA, etc.)
   - Spotify version
-  - Spotifyy version
+  - Iayxify version
   - iOS / iPadOS version
   - affected area
   - a debug log from the tweak settings if relevant
@@ -25,13 +25,13 @@ If you want to test a change yourself, there are a few paths already in the repo
 - `setup-build-ipa.sh` / `build-ipa-local.sh` for IPA-style builds
 - `make package` for building a `.deb`
 
-Some builds also need a locally built `SpotifyySwiftProtobuf.framework`. The Makefile documents that with the `build-spotifyyswiftprotobuf` target, and the CI workflows do the same thing before packaging.
+Some builds also need a locally built `IayxifySwiftProtobuf.framework`. The Makefile documents that with the `build-iayxifyswiftprotobuf` target, and the CI workflows do the same thing before packaging.
 
 If you are just tweaking logic and do not need a full IPA right away, the most important thing is still that you can build cleanly and that the change does not obviously break compilation for the version family you care about.
 
 ## Version sensitivity
 
-Spotifyy hooks private classes, selectors, and response shapes that can change between Spotify releases. That means:
+Iayxify hooks private classes, selectors, and response shapes that can change between Spotify releases. That means:
 
 - A change that works on one Spotify version may not be safe on another.
 - When you contribute something that touches hooking, patching, or response parsing, say which Spotify version(s) you tested on.

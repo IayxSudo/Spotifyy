@@ -4,7 +4,7 @@ ARCHS = arm64
 
 include $(THEOS)/makefiles/common.mk
 
-TWEAK_NAME = Spotifyy
+TWEAK_NAME = Iayxify
 
 REPO_SLUG ?= $(shell git remote get-url origin 2>/dev/null | sed -E 's|.*github\.com[:/]([^/]+/[^/.]+)(\.git)?$$|\1|')
 REPO_SLUG_FINAL := $(if $(REPO_SLUG),$(REPO_SLUG),jaydenjcpy/SpotifyyReincarnated)
@@ -12,21 +12,21 @@ REPO_SLUG_FINAL := $(if $(REPO_SLUG),$(REPO_SLUG),jaydenjcpy/SpotifyyReincarnate
 BRANCH_NAME ?= $(shell git rev-parse --abbrev-ref HEAD 2>/dev/null)
 BRANCH_NAME_FINAL := $(if $(BRANCH_NAME),$(BRANCH_NAME),Master)
 
-$(shell mkdir -p Sources/Spotifyy/Generated)
-$(shell printf 'enum GeneratedConfig {\n    static let repoSlug = "%s"\n    static let branchName = "%s"\n}\n' "$(REPO_SLUG_FINAL)" "$(BRANCH_NAME_FINAL)" > Sources/Spotifyy/Generated/RepoSlug.swift)
+$(shell mkdir -p Sources/Iayxify/Generated)
+$(shell printf 'enum GeneratedConfig {\n    static let repoSlug = "%s"\n    static let branchName = "%s"\n}\n' "$(REPO_SLUG_FINAL)" "$(BRANCH_NAME_FINAL)" > Sources/Iayxify/Generated/RepoSlug.swift)
 
-Spotifyy_FILES = $(shell find Sources/Spotifyy -name '*.swift') $(shell find Sources/SpotifyyC -name '*.m' -o -name '*.c' -o -name '*.mm' -o -name '*.cpp')
-Spotifyy_SWIFTFLAGS = -ISources/SpotifyyC/include -Osize
-Spotifyy_EXTRA_FRAMEWORKS = SpotifyySwiftProtobuf
-Spotifyy_CFLAGS = -fobjc-arc -ISources/SpotifyyC/include -Os
+Iayxify_FILES = $(shell find Sources/Iayxify -name '*.swift') $(shell find Sources/IayxifyC -name '*.m' -o -name '*.c' -o -name '*.mm' -o -name '*.cpp')
+Iayxify_SWIFTFLAGS = -ISources/IayxifyC/include -Osize
+Iayxify_EXTRA_FRAMEWORKS = IayxifySwiftProtobuf
+Iayxify_CFLAGS = -fobjc-arc -ISources/IayxifyC/include -Os
 
 # RootHide's compatibility implementation of libroot resolves jailbreak paths
 # through libroothide at runtime. Rootless builds continue to use libroot.
 ifeq ($(THEOS_PACKAGE_SCHEME),roothide)
-Spotifyy_SWIFTFLAGS += -D ROOTHIDE
-Spotifyy_LDFLAGS += -lroothide -Xlinker -rpath -Xlinker @loader_path/.jbroot/Library/Frameworks
+Iayxify_SWIFTFLAGS += -D ROOTHIDE
+Iayxify_LDFLAGS += -lroothide -Xlinker -rpath -Xlinker @loader_path/.jbroot/Library/Frameworks
 else
-Spotifyy_LDFLAGS += -lroot
+Iayxify_LDFLAGS += -lroot
 endif
 
 # Sideload compatibility (keychain redirect, group containers, CloudKit) is
@@ -36,11 +36,11 @@ endif
 include $(THEOS_MAKE_PATH)/tweak.mk
 
 internal-stage::
-	# Bundle SpotifyySwiftProtobuf.framework into the package. Renamed from
+	# Bundle IayxifySwiftProtobuf.framework into the package. Renamed from
 	# SwiftProtobuf so the @objc class names don't collide with the
 	# SwiftProtobuf statically embedded in SpotifyShared.framework.
 	mkdir -p $(THEOS_STAGING_DIR)/Library/Frameworks
-	cp -r $(THEOS)/lib/iphone/$(or $(THEOS_PACKAGE_SCHEME),rootless)/SpotifyySwiftProtobuf.framework $(THEOS_STAGING_DIR)/Library/Frameworks/
+	cp -r $(THEOS)/lib/iphone/$(or $(THEOS_PACKAGE_SCHEME),rootless)/IayxifySwiftProtobuf.framework $(THEOS_STAGING_DIR)/Library/Frameworks/
 	# Compile the karaoke background Metal shader into a .metallib and
 	# stage it next to the tweak binary so device.makeLibrary(filepath:)
 	# can load it at runtime (Theos's tweak.mk has no built-in Metal
@@ -50,13 +50,13 @@ internal-stage::
 	# .metallib or that the staged path is correct; if `make package`
 	# fails at this step or the shader doesn't load at runtime, check
 	# this block first).
-	xcrun -sdk iphoneos metal -c Sources/Spotifyy/Karaoke/KaraokeBackgroundShader.metal \
+	xcrun -sdk iphoneos metal -c Sources/Iayxify/Karaoke/KaraokeBackgroundShader.metal \
 		-o $(THEOS_OBJ_DIR)/KaraokeBackgroundShader.air
 	xcrun -sdk iphoneos metallib $(THEOS_OBJ_DIR)/KaraokeBackgroundShader.air \
 		-o $(THEOS_STAGING_DIR)/Library/MobileSubstrate/DynamicLibraries/KaraokeBackgroundShader.metallib
 
-# Build SpotifyySwiftProtobuf.framework from apple/swift-protobuf source. Run
+# Build IayxifySwiftProtobuf.framework from apple/swift-protobuf source. Run
 # this once before `make package`. Re-run if SWIFTPROTOBUF_VERSION changes
 # or `swift --version` jumps a major.
-build-spotifyyswiftprotobuf:
-	Tools/SwiftProtobufBuild/build-spotifyyswiftprotobuf.sh
+build-iayxifyswiftprotobuf:
+	Tools/SwiftProtobufBuild/build-iayxifyswiftprotobuf.sh

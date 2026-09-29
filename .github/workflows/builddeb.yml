@@ -63,28 +63,28 @@ jobs:
           brew install make dpkg ldid
           echo "$(brew --prefix make)/libexec/gnubin" >> "$GITHUB_PATH"
 
-      - name: Build SpotifyySwiftProtobuf.framework
-        run: make build-spotifyyswiftprotobuf
+      - name: Build IayxifySwiftProtobuf.framework
+        run: make build-iayxifyswiftprotobuf
 
       - name: Test ad and Premium banner filtering
         run: |
           swiftc \
-            Sources/Spotifyy/Premium/Helpers/BrowsitaSectionStripper.swift \
+            Sources/Iayxify/Premium/Helpers/BrowsitaSectionStripper.swift \
             Tests/BrowsitaSectionStripper/main.swift \
             -o "$RUNNER_TEMP/browsita-section-stripper-tests"
           "$RUNNER_TEMP/browsita-section-stripper-tests"
           swiftc \
-            Sources/Spotifyy/Shared/Models/Extensions/URL+Extension.swift \
+            Sources/Iayxify/Shared/Models/Extensions/URL+Extension.swift \
             Tests/URLAdClassification/main.swift \
             -o "$RUNNER_TEMP/url-ad-classification-tests"
           "$RUNNER_TEMP/url-ad-classification-tests"
           swiftc \
-            Sources/Spotifyy/Premium/Helpers/ServerSidedFeaturePolicy.swift \
+            Sources/Iayxify/Premium/Helpers/ServerSidedFeaturePolicy.swift \
             Tests/ServerSidedFeaturePolicy/main.swift \
             -o "$RUNNER_TEMP/server-sided-feature-policy-tests"
           "$RUNNER_TEMP/server-sided-feature-policy-tests"
           swiftc \
-            Sources/Spotifyy/Premium/Helpers/BundledConfigurationPolicy.swift \
+            Sources/Iayxify/Premium/Helpers/BundledConfigurationPolicy.swift \
             Tests/BundledConfigurationPolicy/main.swift \
             -o "$RUNNER_TEMP/bundled-configuration-policy-tests"
           "$RUNNER_TEMP/bundled-configuration-policy-tests"
@@ -115,10 +115,10 @@ jobs:
           DEB_PATH="$(find Outputs/DEBS -name '*.deb' -type f | head -n 1)"
           dpkg-deb --info "$DEB_PATH"
           dpkg-deb --contents "$DEB_PATH"
-          EXTRACT_DIR="$RUNNER_TEMP/spotifyy-deb-${{ matrix.scheme }}"
+          EXTRACT_DIR="$RUNNER_TEMP/iayxify-deb-${{ matrix.scheme }}"
           dpkg-deb -x "$DEB_PATH" "$EXTRACT_DIR"
-          DYLIB_PATH="$(find "$EXTRACT_DIR" -name 'Spotifyy.dylib' -type f | head -n 1)"
-          [ -n "$DYLIB_PATH" ] || { echo "Spotifyy.dylib missing" >&2; exit 1; }
+          DYLIB_PATH="$(find "$EXTRACT_DIR" -name 'Iayxify.dylib' -type f | head -n 1)"
+          [ -n "$DYLIB_PATH" ] || { echo "Iayxify.dylib missing" >&2; exit 1; }
           for marker in \
             AdsSponsoredContextServiceImpl \
             AdsSponsoredContextNPBAttachmentServiceImpl \
@@ -144,7 +144,7 @@ jobs:
       - name: Upload ${{ matrix.label }} artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Spotifyy-${{ matrix.label }}-DEB
+          name: Iayxify-${{ matrix.label }}-DEB
           path: Outputs/DEBS/*.deb
           if-no-files-found: error
 
@@ -158,7 +158,7 @@ jobs:
       - name: Download both packages
         uses: actions/download-artifact@v4
         with:
-          pattern: Spotifyy-*-DEB
+          pattern: Iayxify-*-DEB
           path: Outputs/DEBS
           merge-multiple: true
 

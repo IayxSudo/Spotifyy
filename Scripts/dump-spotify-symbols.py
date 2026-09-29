@@ -143,7 +143,7 @@ def main():
     buckets = bucket_strings(data)
 
     lines = [
-        "# spotifyy-symbol-dump v1",
+        "# iayxify-symbol-dump v1",
         "# source: %s" % args.input,
         "# format: one entry per line under each [bucket]; sorted, deduped",
     ]

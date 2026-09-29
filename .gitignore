@@ -13,7 +13,7 @@ xcuserdata/
 .theos/
 packages/
 
-Sources/Spotifyy/Generated/
+Sources/Iayxify/Generated/
 
 # IPA / decrypted-source build artifacts
 *.ipa
@@ -23,6 +23,11 @@ Debs/
 Outputs/
 
 wrapper/
+
+# Electron installer app
+installer/node_modules/
+installer/dist/
+installer/.venv/
 
 # zxPluginsInject build outputs
 modules/zxPluginsInject/.theos/

@@ -65,23 +65,23 @@ let swiftFlags: [String] = libFlags + [
 ]
 
 let package = Package(
-    name: "Spotifyy",
+    name: "Iayxify",
     platforms: [.iOS(deploymentTarget)],
     products: [
         .library(
-            name: "Spotifyy",
-            targets: ["Spotifyy"]
+            name: "Iayxify",
+            targets: ["Iayxify"]
         ),
     ],
     targets: [
         .target(
-            name: "SpotifyyC",
+            name: "IayxifyC",
             cSettings: [.unsafeFlags(cFlags)],
             cxxSettings: [.unsafeFlags(cxxFlags)]
         ),
         .target(
-            name: "Spotifyy",
-            dependencies: ["SpotifyyC"],
+            name: "Iayxify",
+            dependencies: ["IayxifyC"],
             swiftSettings: [.unsafeFlags(swiftFlags)]
         ),
     ]

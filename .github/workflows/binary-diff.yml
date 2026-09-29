@@ -72,7 +72,7 @@ jobs:
           set +e
           python3 Scripts/diff-symbol-dumps.py "${{ steps.baseline.outputs.path }}" \
             "dump-${{ steps.ver.outputs.version }}.txt" \
-            --tweak-sources Sources/Spotifyy \
+            --tweak-sources Sources/Iayxify \
             -o "report-${{ steps.ver.outputs.version }}.md"
           code=$?
           echo "exit_code=$code" >> "$GITHUB_OUTPUT"
@@ -103,7 +103,7 @@ jobs:
         if: ${{ inputs.refresh_baseline == 'true' }}
         run: |
           SPOT="${{ steps.ver.outputs.version }}"
-          git config user.name "spotifyy-baseline-bot"
+          git config user.name "iayxify-baseline-bot"
           git config user.email "actions@users.noreply.github.com"
           git checkout -b "diff-baseline-${SPOT}"
           cp "dump-${SPOT}.txt" "Symbols/baseline-${SPOT}.txt"

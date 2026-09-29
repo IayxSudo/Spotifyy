@@ -1,5 +1,5 @@
 name: Feature Request
-description: Suggest an idea or improvement for Spotifyy
+description: Suggest an idea or improvement for Iayxify
 labels: ["enhancement"]
 body:
   - type: markdown
@@ -16,7 +16,7 @@ body:
         - Anything that requires actually having a Premium subscription on Spotify's servers
 
         Also not accepted:
-        - **Free feature requests in general.** Spotifyy is maintained by volunteers. If you need something, feel free to implement it yourself and submit a pull request — or open an issue to discuss paid opportunities.
+        - **Free feature requests in general.** Iayxify is maintained by volunteers. If you need something, feel free to implement it yourself and submit a pull request — or open an issue to discuss paid opportunities.
         - "Make it work on Android / Windows / etc." — iOS/iPadOS only by design.
 
   - type: checkboxes

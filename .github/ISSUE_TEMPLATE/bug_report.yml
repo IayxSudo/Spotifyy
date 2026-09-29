@@ -1,5 +1,5 @@
 name: Bug Report
-description: Report something that doesn't work as expected in Spotifyy
+description: Report something that doesn't work as expected in Iayxify
 labels: ["bug"]
 body:
   - type: markdown
@@ -8,7 +8,7 @@ body:
         **Before you submit:**
         - Check the [Common Issues / FAQ](https://github.com/jaydenjcpy/SpotifyyReincarnated/blob/Master/common_issues.md) — most premium, logout, lyrics, and download questions are answered there.
         - Issues about server-sided features (Very High audio quality, native playlist downloading, Jam hosting, AI DJ/Playlist, Spotify Connect, homescreen/podcast ads) will be closed without further discussion.
-        - If you can, update to the latest Spotifyy and Spotify versions and check whether the bug still happens.
+        - If you can, update to the latest Iayxify and Spotify versions and check whether the bug still happens.
 
   - type: dropdown
     id: install-type
@@ -32,10 +32,10 @@ body:
       required: true
 
   - type: input
-    id: spotifyy-version
+    id: iayxify-version
     attributes:
-      label: Spotifyy version
-      description: Found in Spotifyy settings, e.g. 5.x.x
+      label: Iayxify version
+      description: Found in Iayxify settings, e.g. 5.x.x
       placeholder: e.g. 5.1.0
     validations:
       required: true
@@ -55,7 +55,7 @@ body:
       options:
         - label: I have read the [Common Issues / FAQ](https://github.com/jaydenjcpy/SpotifyyReincarnated/blob/Master/common_issues.md)
         - label: This is not a server-sided feature listed in the FAQ or README
-        - label: I am on the latest Spotifyy release (or this also happens on it)
+        - label: I am on the latest Iayxify release (or this also happens on it)
     validations:
       required: true
 
@@ -101,7 +101,7 @@ body:
     attributes:
       label: Debug log
       description: |
-        Export the debug log from Spotifyy settings and paste it below.
+        Export the debug log from Iayxify settings and paste it below.
         Remove any tokens or account details if present.
       render: text
 

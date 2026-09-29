@@ -33,7 +33,7 @@
 #   primary-icon.sh <path.ipa>   [name]
 #
 # [name] is a stem under Assets/AppIcon/sources, or any path to a PNG.
-# Defaults to SpotifyyMidnight. Requires sips (macOS).
+# Defaults to IayxifyMidnight. Requires sips (macOS).
 
 set -euo pipefail
 
@@ -41,7 +41,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SRC_DIR="$ROOT_DIR/Assets/AppIcon/sources"
 GENERATED_DIR="$ROOT_DIR/Assets/AppIcon/primary"
 PB="${PLIST_BUDDY:-/usr/libexec/PlistBuddy}"
-DEFAULT_ICON="SpotifyyMidnight"
+DEFAULT_ICON="IayxifyMidnight"
 
 # The standard iPhone/iPad icon slots, always guaranteed to exist.
 # name:points:scales — points is the icon's nominal size, scales are the

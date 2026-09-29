@@ -3,7 +3,7 @@ import pathlib
 
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
-BUNDLE = ROOT / "layout/Library/Application Support/Spotifyy.bundle"
+BUNDLE = ROOT / "layout/Library/Application Support/Iayxify.bundle"
 
 
 def read_varint(data: bytes, offset: int) -> tuple[int, int]:

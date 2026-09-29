@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-l10n_lint.py — Localization key linter for SpotifyyReincarnated.
+l10n_lint.py — Localization key linter for IayxifyReincarnated.
 
 Cross-checks every *.lproj/Localizable.strings against the English baseline and
 optionally against keys actually referenced in Swift sources.
@@ -30,7 +30,7 @@ import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-BUNDLE_DIR = REPO_ROOT / "layout" / "Library" / "Application Support" / "Spotifyy.bundle"
+BUNDLE_DIR = REPO_ROOT / "layout" / "Library" / "Application Support" / "Iayxify.bundle"
 SOURCES_DIR = REPO_ROOT / "Sources"
 
 BASELINE = "en"

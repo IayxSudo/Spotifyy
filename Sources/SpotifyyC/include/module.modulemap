@@ -1,4 +1,0 @@
-module SpotifyyC {
-    umbrella "."
-    export *
-}

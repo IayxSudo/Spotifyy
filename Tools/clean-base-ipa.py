@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Turn a pre-patched Spotify IPA into a clean base for Spotifyy injection.
+"""Turn a pre-patched Spotify IPA into a clean base for Iayxify injection.
 
 Most "decrypted Spotify" IPAs circulating for sideloading already have a tweak
 baked in (commonly EeveeSpotify, plus a zxPluginsInject shim). Injecting
-Spotifyy.dylib on top of one of those loads *two* copies of essentially the same
+Iayxify.dylib on top of one of those loads *two* copies of essentially the same
 tweak into the same process: duplicate hooks, duplicate settings panes,
 duplicate player observers. That is a crash, not a feature.
 
@@ -18,7 +18,7 @@ This removes the stale pieces:
 That last group matters for more than tidiness: the extension hands a page back
 to the app as spotify://<host>/<path> and the tweak decides whether to accept it
 by comparing that host, so a base patched by a differently-named tweak sends a
-host the injected Spotifyy does not recognise and the handoff does nothing.
+host the injected Iayxify does not recognise and the handoff does nothing.
 
 Load commands are not deleted (that would mean rewriting the whole Mach-O and
 every file offset in it). They are downgraded to LC_LOAD_WEAK_DYLIB instead,
@@ -33,7 +33,7 @@ The same script also has a second, narrower job. The OpenSpotify Safari
 Extension is cloned from a third-party repository and injected *after* this strip,
 so the branding it carries can only be cleared once the IPA is finished. That is
 what --scrub-only is for: no payload is deleted and no load command is touched,
-which it must not be, because by then the bundle holds the Spotifyy.dylib we
+which it must not be, because by then the bundle holds the Iayxify.dylib we
 just injected and STALE_STEMS would match it.
 
 Usage:
@@ -53,7 +53,7 @@ import struct
 import sys
 import zipfile
 
-# Injection basenames to strip, without the extension. A stale Spotifyy.dylib is
+# Injection basenames to strip, without the extension. A stale Iayxify.dylib is
 # stripped too, so re-running this on an already-patched IPA cleans it.
 #
 # zxPluginsInject belongs in this list even though it is not a competing tweak:
@@ -62,11 +62,11 @@ import zipfile
 # that was patched before always carries one in the main executable and in every
 # appex. Repointing that load command also clears ipapatch's name comparison, so
 # its own fresh injection succeeds.
-STALE_STEMS = ("EeveeSpotify", "Spotifyy", "zxPluginsInject")
+STALE_STEMS = ("EeveeSpotify", "Iayxify", "zxPluginsInject")
 
 # Bundles belonging to those tweaks. Jailbreak tweaks ship no bundle, but
 # IPA-patched builds of them do. zxPluginsInject has none.
-STALE_BUNDLES = ("EeveeSpotify.bundle", "Spotifyy.bundle")
+STALE_BUNDLES = ("EeveeSpotify.bundle", "Iayxify.bundle")
 
 # A stale load is pointed at a path that cannot exist as well as downgraded to
 # LC_LOAD_WEAK_DYLIB, so the skip holds independently of dyld's weak-link
@@ -123,7 +123,7 @@ CODE_SIGN_MANIFEST = "_CodeSignature/CodeResources"
 # still sends upstream's host, so the handoff is silently ignored there. Point
 # it at our host whatever the base shipped.
 LEGACY_HANDOFF = re.compile(rb"spotify://[A-Za-z0-9._-]+/")
-OUR_HANDOFF = b"spotify://spotifyy/"
+OUR_HANDOFF = b"spotify://iayxify/"
 
 # Sentences are split on punctuation followed by whitespace, so a version number
 # like "3.1" inside one stays part of that sentence instead of ending it.
@@ -203,7 +203,7 @@ def scrub_message(message):
     kept = [s for s in SENTENCE_BREAK.split(message) if "EeveeSpotify" not in s]
     cleaned = " ".join(kept).strip()
     if not cleaned:
-        cleaned = message.replace("EeveeSpotify", "Spotifyy")
+        cleaned = message.replace("EeveeSpotify", "Iayxify")
     return cleaned
 
 
@@ -245,7 +245,7 @@ def scrub_text(name, data):
     # text. Mach-O is never rewritten here: a shorter string would move every
     # offset after it, and a load path is already handled by patch_macho.
     if LEGACY_NAME in data and name.endswith(TEXT_SUFFIXES):
-        data, count = re.subn(b"EeveeSpotify", b"Spotifyy", data)
+        data, count = re.subn(b"EeveeSpotify", b"Iayxify", data)
         notes.append("renamed %d leftover upstream name(s) in %s" % (count, basename))
 
     return data, notes
@@ -359,7 +359,7 @@ def clean(src, dst, scrub_only=False):
     command rewritten - and only clears branding, which is what a finished IPA
     can take. It exists because the OpenSpotify appex is injected from a
     third-party repository after the strip: its leftovers can only be cleared
-    afterwards, and by then STALE_STEMS would match the Spotifyy.dylib the strip
+    afterwards, and by then STALE_STEMS would match the Iayxify.dylib the strip
     is supposed to protect.
     """
     removed = []
