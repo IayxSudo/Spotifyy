@@ -191,7 +191,7 @@ enum IayxifySideDrawerEntry {
     /// the settings screen is presented — otherwise the sheet appears stacked on
     /// a panel that stays open behind it.
     private static func open() {
-        guard let drawer = currentDrawer else {
+        guard let drawer = currentDrawer() else {
             IayxifySettingsLauncher.open(from: WindowHelper.shared.rootViewController)
             return
         }
