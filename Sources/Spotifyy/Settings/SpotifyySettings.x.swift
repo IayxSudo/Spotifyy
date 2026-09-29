@@ -24,7 +24,7 @@ class ProfileSettingsSectionHook: ClassHook<NSObject> {
             let spotifyySettingsController = SpotifyySettingsViewController(
                 rootSettingsController.view.bounds,
                 settingsView: AnyView(SpotifyySettingsView(navigationController: navigationController)),
-                navigationTitle: IayxifySettingsLauncher.title
+                navigationTitle: "Spotifyy"
             )
             
             //
@@ -67,7 +67,7 @@ class ProfileSettingsSectionHook: ClassHook<NSObject> {
         if row == 1 {
             let settingsTableCell = Dynamic.SPTSettingsTableViewCell
                 .alloc(interface: SPTSettingsTableViewCell.self)
-                .initWithStyle(3, reuseIdentifier: "Iayxify")
+                .initWithStyle(3, reuseIdentifier: "Spotifyy")
             
             let tableViewCell = Dynamic.convert(settingsTableCell, to: UITableViewCell.self)
 
@@ -77,7 +77,7 @@ class ProfileSettingsSectionHook: ClassHook<NSObject> {
             )
             .disclosureAccessoryView()
             
-            tableViewCell.textLabel?.text = IayxifySettingsLauncher.title
+            tableViewCell.textLabel?.text = "Spotifyy"
             return tableViewCell
         }
 

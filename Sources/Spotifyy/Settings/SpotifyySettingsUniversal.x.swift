@@ -40,7 +40,7 @@ class UniversalProfileSettingsSectionHook: ClassHook<NSObject> {
         if row == originalRows {
             let settingsTableCell = Dynamic.SPTSettingsTableViewCell
                 .alloc(interface: SPTSettingsTableViewCell.self)
-                .initWithStyle(3, reuseIdentifier: "Iayxify")
+                .initWithStyle(3, reuseIdentifier: "Spotifyy")
             
             let tableViewCell = Dynamic.convert(settingsTableCell, to: UITableViewCell.self)
             
@@ -50,7 +50,7 @@ class UniversalProfileSettingsSectionHook: ClassHook<NSObject> {
             )
             .disclosureAccessoryView()
             
-            tableViewCell.textLabel?.text = IayxifySettingsLauncher.title
+            tableViewCell.textLabel?.text = "Spotifyy"
             
             return tableViewCell
         }
@@ -72,7 +72,7 @@ class UniversalProfileSettingsSectionHook: ClassHook<NSObject> {
         let spotifyySettingsController = SpotifyySettingsViewController(
             rootController.view.bounds,
             settingsView: AnyView(SpotifyySettingsView(navigationController: navigationController)),
-            navigationTitle: IayxifySettingsLauncher.title
+            navigationTitle: "Spotifyy"
         )
         
         let button = UIButton()
@@ -131,7 +131,7 @@ func injectSpotifyyButton(into target: UIViewController) {
         let spotifyySettingsController = SpotifyySettingsViewController(
             target.view.bounds,
             settingsView: AnyView(SpotifyySettingsView(navigationController: navigationController)),
-            navigationTitle: IayxifySettingsLauncher.title
+            navigationTitle: "Spotifyy"
         )
         
         // Add GitHub button to the Spotifyy settings page itself
@@ -229,7 +229,7 @@ class SettingsListViewControllerHook: ClassHook<UIViewController> {
 
 private let spotifyyInlineRowTag = 1338
 private let spotifyyInlineRowHeight: CGFloat = 68
-private let spotifyyInlineRowTitle = "Iayxify"
+private let spotifyyInlineRowTitle = "Spotifyy"
 
 func injectSpotifyyInlineRow(into vc: UIViewController) {
     // Each Spotify page sits in a MusicAppPageHostingViewController wrapper; the list VC is its child.
@@ -337,7 +337,7 @@ private func pushSpotifyySettings(from vc: UIViewController) {
     let host = SpotifyySettingsViewController(
         vc.view.bounds,
         settingsView: AnyView(SpotifyySettingsView(navigationController: nav)),
-        navigationTitle: IayxifySettingsLauncher.title
+        navigationTitle: "Spotifyy"
     )
 
     let subButton = UIButton(type: .system)

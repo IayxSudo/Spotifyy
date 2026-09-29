@@ -12,7 +12,7 @@ struct ContributorRow: View {
                         if index > 0 {
                             Text("&")
                                 .font(.title3).bold()
-                                .foregroundColor(.primary)
+                                .foregroundColor(.white)
                         }
                         HStack(spacing: 6) {
                             // Bigger pfp for multi-contributor
@@ -21,7 +21,7 @@ struct ContributorRow: View {
                                 .clipShape(Circle())
                             Text(nameFor(index: index, username: username))
                                 .font(.title3).bold()
-                                .foregroundColor(.primary)
+                                .foregroundColor(.white)
                         }
                     }
                 }
@@ -42,7 +42,7 @@ struct ContributorRow: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(contributor.displayName ?? contributor.usernames[0])
                         .font(.title3).bold()
-                        .foregroundColor(.primary)
+                        .foregroundColor(.white)
 
                     if let richRoles = contributor.richRoles {
                         ForEach(richRoles, id: \.name) { role in
@@ -57,13 +57,13 @@ struct ContributorRow: View {
                                         HStack(spacing: 6) {
                                             Text("·")
                                                 .font(.body).bold()
-                                                .foregroundColor(.primary)
+                                                .foregroundColor(.white)
                                             ImageView(urlString: "https://github.com/\(username).png")
                                                 .frame(width: 22, height: 22)
                                                 .clipShape(Circle())
                                             Text(role.coDisplayNames?[safe: index] ?? username)
                                                 .font(.body).bold()
-                                                .foregroundColor(.primary)
+                                                .foregroundColor(.white)
                                         }
                                     }
                                 }

@@ -10,12 +10,7 @@ Checks:
   2. Extra keys     — key exists in locale X but not in en.lproj (error, usually stale)
   3. Unused keys    — key defined in en.lproj but never referenced in Swift code
                       (warning; .strings values are used dynamically so review
-                      each hit manually before deleting). A key counts as used
-                      both when it is passed to a localization helper and when
-                      its exact name appears as a Swift string literal, which is
-                      how keys built from an enum or passed as an argument
-                      (`theme.localizationKey`, `titleKey: "theme_custom_accent"`)
-                      show up in the sources.
+                      each hit manually before deleting)
   4. Format args    — key uses %@" / %@d style placeholders but the locale's
                       value has a different number of them (error)
 
@@ -48,10 +43,6 @@ LINE_COMMENT_RE = re.compile(r"^\s*//.*$", re.M)
 # Format specifiers that must match across translations: %@, %1$@, %d, %ld, %lu...
 FORMAT_SPEC_RE = re.compile(r"%\d+\$[@dDuUxXoOfeEgGcCsS]|%[@dDuUxXoOfeEgGcCsS]")
 
-# Any bare Swift string literal, used to catch keys that never sit next to a
-# `.localized` call (enum-driven keys, keys passed as function arguments).
-LITERAL_RE = re.compile(r'"([A-Za-z0-9_.\-]+)"')
-
 
 def parse_strings_file(path: Path) -> dict[str, str]:
     """Parse a .strings file into an ordered {key: value} dict."""
@@ -65,17 +56,11 @@ def parse_strings_file(path: Path) -> dict[str, str]:
     return entries
 
 
-def referenced_keys() -> tuple[set[str], set[str]]:
-    """Collect localization keys referenced anywhere in Swift sources.
-
-    Returns `(helper_keys, literals)`: keys passed straight to a localization
-    helper, and every string literal found in the sources. The caller intersects
-    the literals with the baseline so a literal only counts when it matches a key.
-    """
+def referenced_keys() -> set[str]:
+    """Collect localization keys referenced anywhere in Swift sources."""
     keys: set[str] = set()
-    literals: set[str] = set()
     if not SOURCES_DIR.exists():
-        return keys, literals
+        return keys
     swift_files = list(SOURCES_DIR.rglob("*.swift"))
     # Match: "key".localized / .localizeWithFormat / String(localized:) style usage,
     # plus raw table lookups. Keys are [a-zA-Z0-9_.-]+ quoted strings.
@@ -92,8 +77,7 @@ def referenced_keys() -> tuple[set[str], set[str]]:
             continue
         for pat in patterns:
             keys.update(pat.findall(text))
-        literals.update(LITERAL_RE.findall(text))
-    return keys, literals
+    return keys
 
 
 def count_format_specs(value: str) -> int:
@@ -121,11 +105,7 @@ def main() -> int:
         return 2
 
     baseline = parse_strings_file(baseline_path)
-    if args.no_usage:
-        usage: set[str] = set()
-    else:
-        helper_keys, literals = referenced_keys()
-        usage = helper_keys | (literals & set(baseline))
+    usage = set() if args.no_usage else referenced_keys()
 
     locales = locale_dirs()
     if not locales:

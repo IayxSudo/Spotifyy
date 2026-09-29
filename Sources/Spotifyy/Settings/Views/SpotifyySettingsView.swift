@@ -3,32 +3,11 @@ import UIKit
 
 struct SpotifyySettingsView: View {
     let navigationController: UINavigationController
-
-    /// Accent used by every Iayxify screen. Computed from the user's theme
-    /// (`appearanceThemeOptions`) instead of being a constant, so the picker
-    /// applies without touching the call sites.
-    static var spotifyAccentColor: Color { SpotifyyAppearance.accentColor }
+    static let spotifyAccentColor = Color(hex: "#1ed760")
     
     @State private var hasShownCommonIssuesTip = UserDefaults.hasShownCommonIssuesTip
     @State private var isClearingData = false
     @State private var isPresentingDevNoteSheet = false
-
-    /// Mirrored so the swatch strip redraws the moment a theme is tapped; the
-    /// real value lives in `UserDefaults.appearanceThemeOptions`.
-    @State private var themeOptions = UserDefaults.appearanceThemeOptions
-
-    /// Same mirroring for the inline feature switches at the bottom.
-    @State private var cleanShareLinks = UserDefaults.cleanShareLinks
-    @State private var darkPopUps = UserDefaults.darkPopUps
-    @State private var sponsorBlockEnabled = UserDefaults.sponsorBlockOptions.enabled
-    @State private var listeningStatsEnabled = UserDefaults.listeningStatsEnabled
-    @State private var trueShuffle = UserDefaults.trueShuffleEnabled
-    @State private var prettifyIconNames = UserDefaults.iconNamePrettify
-    /// Bumped when the accent changes. This view stays alive underneath the
-    /// Appearance screen, so the notification reaches it while it is off-screen
-    /// and this forced rebuild makes the accent-tinted rows correct when the
-    /// user pops back instead of still showing the old colour.
-    @State private var appearanceRevision = 0
 
 
     private func confirmDestructive(
@@ -56,8 +35,7 @@ struct SpotifyySettingsView: View {
     
     init(navigationController: UINavigationController) {
         self.navigationController = navigationController
-        // Honours the user's accent (and their 'tint Spotify controls' toggle).
-        SpotifyyAppearance.applyToSystemControls()
+        UIView.appearance().tintColor = UIColor(SpotifyySettingsView.spotifyAccentColor)
     }
 
     var body: some View {
@@ -72,9 +50,7 @@ struct SpotifyySettingsView: View {
                     }
                 )
             }
-
-            themeSwatchSection
-
+            
             //
             
             Button {
@@ -116,19 +92,6 @@ struct SpotifyySettingsView: View {
                 )
             }
             
-            Button {
-                pushSettingsController(
-                    with: SpotifyyAppearanceSettingsView(),
-                    title: "appearance".localized
-                )
-            } label: {
-                NavigationSectionView(
-                    color: Color(hex: "#00C7BE"),
-                    title: "appearance".localized,
-                    imageSystemName: "paintbrush.fill"
-                )
-            }
-
             Button {
                 pushSettingsController(
                     with: SpotifyyExperimentsSettingsView(),
@@ -206,8 +169,6 @@ struct SpotifyySettingsView: View {
                     imageSystemName: "ellipsis.circle.fill"
                 )
             }
-
-            featureTogglesSection
 
             //
 
@@ -326,184 +287,12 @@ struct SpotifyySettingsView: View {
             }
         }
         .listStyle(GroupedListStyle())
-        .id(appearanceRevision)
         
         .animation(.default, value: isClearingData)
         .animation(.default, value: hasShownCommonIssuesTip)
 
         .onAppear {
-            themeOptions = UserDefaults.appearanceThemeOptions
-            WindowHelper.shared.overrideUserInterfaceStyle(SpotifyyAppearance.palette.style)
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .spotifyyAppearanceChanged)) { _ in
-            themeOptions = UserDefaults.appearanceThemeOptions
-            appearanceRevision &+= 1
-        }
-    }
-
-    // MARK: - Theme
-
-    /// Theme presets inline, so the hub can recolour the app without a second
-    /// navigation step. "Custom" opens the theme screen, where the colour
-    /// pickers live.
-    private var themeSwatchSection: some View {
-        Section(
-            header: Text("theme_quick_section".localized),
-            footer: Text("theme_quick_footer".localized)
-        ) {
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 14) {
-                    ForEach(IayxifyTheme.allCases, id: \.self) { theme in
-                        swatch(theme)
-                    }
-                }
-                .padding(.vertical, 4)
-                .padding(.horizontal, 2)
-            }
-            .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
-        }
-    }
-
-    private func swatch(_ theme: IayxifyTheme) -> some View {
-        let palette = theme.palette(custom: themeOptions.custom)
-        let isSelected = themeOptions.theme == theme
-
-        return Button {
-            selectTheme(theme)
-        } label: {
-            VStack(spacing: 6) {
-                ZStack {
-                    Circle()
-                        .fill(
-                            LinearGradient(
-                                gradient: Gradient(colors: [palette.background, palette.accent]),
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                        .frame(width: 46, height: 46)
-                        .overlay(
-                            Circle().stroke(
-                                isSelected ? SpotifyySettingsView.spotifyAccentColor : Color.white.opacity(0.12),
-                                lineWidth: isSelected ? 2 : 1
-                            )
-                        )
-
-                    if isSelected {
-                        Image(systemName: "checkmark")
-                            .font(.system(size: 15, weight: .bold))
-                            .foregroundColor(.white)
-                            .shadow(color: .black.opacity(0.35), radius: 2, y: 1)
-                    }
-                }
-                .frame(height: 48)
-
-                Text(theme.localizationKey.localized)
-                    .font(.system(size: 10, weight: isSelected ? .semibold : .regular))
-                    .foregroundColor(isSelected ? .primary : .secondary)
-                    .multilineTextAlignment(.center)
-                    .lineLimit(2)
-                    .frame(width: 62)
-            }
-        }
-        .buttonStyle(PlainButtonStyle())
-    }
-
-    private func selectTheme(_ theme: IayxifyTheme) {
-        var updated = themeOptions
-        updated.theme = theme
-        themeOptions = updated
-        UserDefaults.appearanceThemeOptions = updated
-
-        SpotifyyAppearance.applyToSystemControls()
-        SpotifyyAppearance.refreshScreenAppearance()
-        SpotifyyAppearance.notifyChanged(debounced: false)
-
-        // The colour pickers live on the theme screen, so tapping Custom takes
-        // the user there instead of applying an invisible preset.
-        if theme.isCustom {
-            pushSettingsController(
-                with: SpotifyyAppearanceSettingsView(),
-                title: "appearance".localized
-            )
-        }
-    }
-
-    // MARK: - Feature switches
-
-    /// The switches that are read on every use, so they can be flipped from here
-    /// and take effect immediately. Features that install hooks at launch live in
-    /// their own sections, since those need a restart.
-    private var featureTogglesSection: some View {
-        Section(
-            header: Text("features_section".localized),
-            footer: Text("features_footer".localized)
-        ) {
-            Toggle(isOn: Binding(
-                get: { cleanShareLinks },
-                set: { newValue in
-                    cleanShareLinks = newValue
-                    UserDefaults.cleanShareLinks = newValue
-                }
-            )) {
-                Text("features_clean_share_links".localized)
-            }
-
-            Toggle(isOn: Binding(
-                get: { sponsorBlockEnabled },
-                set: { newValue in
-                    sponsorBlockEnabled = newValue
-                    var options = UserDefaults.sponsorBlockOptions
-                    options.enabled = newValue
-                    UserDefaults.sponsorBlockOptions = options
-                }
-            )) {
-                Text("sponsorblock".localized)
-            }
-
-            Toggle(isOn: Binding(
-                get: { listeningStatsEnabled },
-                set: { newValue in
-                    listeningStatsEnabled = newValue
-                    UserDefaults.listeningStatsEnabled = newValue
-                }
-            )) {
-                Text("listening_stats_enabled".localized)
-            }
-
-            Toggle(isOn: Binding(
-                get: { trueShuffle },
-                set: { newValue in
-                    trueShuffle = newValue
-                    UserDefaults.trueShuffleEnabled = newValue
-                }
-            )) {
-                Text("true_shuffle".localized)
-            }
-
-            Toggle(isOn: Binding(
-                get: { prettifyIconNames },
-                set: { newValue in
-                    prettifyIconNames = newValue
-                    UserDefaults.iconNamePrettify = newValue
-                }
-            )) {
-                Text("prettifyIconNames".localized)
-            }
-
-            Toggle(isOn: Binding(
-                get: { darkPopUps },
-                set: { newValue in
-                    darkPopUps = newValue
-                    UserDefaults.darkPopUps = newValue
-                }
-            )) {
-                Text("dark_popups".localized)
-            }
-
-            Text("features_restart_note".localized)
-                .font(.caption)
-                .foregroundColor(.secondary)
+            WindowHelper.shared.overrideUserInterfaceStyle(.dark)
         }
     }
 }

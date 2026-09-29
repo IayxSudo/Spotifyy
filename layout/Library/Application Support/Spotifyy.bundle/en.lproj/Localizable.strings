@@ -23,7 +23,7 @@ restart_is_required_description = "App restart is required after changing.";
 // Patching
 
 do_not_patch_premium = "Do Not Patch Premium";
-patching_description = "Iayxify intercepts requests to load user data, deserializes it, and modifies the parameters in real-time.
+patching_description = "Spotifyy intercepts requests to load user data, deserializes it, and modifies the parameters in real-time.
 
 If you have an active Premium subscription, you can turn on Do Not Patch Premium. The tweak won't patch the data or restrict the use of Premium server-sided features.
 
@@ -46,7 +46,7 @@ Genius: Offers the best quality lyrics, provides the most songs, and updates lyr
 LRCLIB: The most open service, offering time-synced lyrics. However, it lacks lyrics for many songs.
 
 Musixmatch: The service Spotify uses. Provides time-synced lyrics for many songs, but you'll need a user token to use this source.";
-lyrics_additional_info = "If Iayxify is unable to find a song or process the lyrics, you'll see a \"Couldn't load the lyrics for this song\" message. The lyrics might be wrong for some songs when using Genius due to how the tweak searches songs. I've made it work in most cases.";
+lyrics_additional_info = "If Spotifyy is unable to find a song or process the lyrics, you'll see a \"Couldn't load the lyrics for this song\" message. The lyrics might be wrong for some songs when using Genius due to how the tweak searches songs. I've made it work in most cases.";
 spicylyrics_description = "SpicyLyrics provides word-by-word karaoke lyrics using Spotify's own token. No extra setup needed.";
 petitlyrics_description = "PetitLyrics: Offers plenty of time-synced Japanese and some international lyrics.";
 
@@ -105,7 +105,7 @@ clean_share_links_description = "Removes the \"si\" tracking parameter from shar
 
 /* MARK: Premium PopUps */
 
-have_premium_popup = "It looks like you have an active Premium subscription, so the tweak won't patch the data or restrict the use of Premium server-sided features. You can manage this in the Iayxify settings.";
+have_premium_popup = "It looks like you have an active Premium subscription, so the tweak won't patch the data or restrict the use of Premium server-sided features. You can manage this in the Spotifyy settings.";
 
 high_audio_quality_popup = "Very high audio quality is server-sided and is not available with this tweak.";
 playlist_downloading_popup = "Native playlist downloading is server-sided and is not available with this tweak. You can download podcast episodes and local playlists though.";
@@ -155,7 +155,7 @@ ad_free_music_listening = "Ad-free music listening";
 play_songs_in_any_order = "Play songs in any order";
 organize_listening_queue = "Organize listening queue";
 
-payment_notice = "Iayxify applies patches to unlock certain Premium features. It's free.";
+payment_notice = "Spotifyy applies patches to unlock certain Premium features. It's free.";
 
 // Debug
 
@@ -341,47 +341,3 @@ listening_stats_footer = "Counted locally since %@. Stats live in Spotify's app 
 listening_stats_reset = "Reset listening stats";
 listening_stats_reset_message = "Deletes every recorded play and minute on this device. This cannot be undone.";
 listening_stats_reset_confirm = "Delete everything";
-
-/* ---- Themes ---- */
-appearance = "Themes";
-theme_quick_section = "Theme";
-theme_quick_footer = "Themes recolour Iayxify's own screens. Spotify's app is left alone unless you turn on tinting.";
-theme_section = "Presets";
-theme_footer = "Tap a preset to apply it. Screens that are already open keep their old colours until you reopen them.";
-theme_light = "Light mode";
-theme_light_subtitle = "White backgrounds, Spotify green";
-theme_dark = "Dark mode";
-theme_dark_subtitle = "Spotify's own dark look";
-theme_mocha = "Mocha";
-theme_mocha_subtitle = "Mauve highlights on deep grey";
-theme_pinkLight = "Pink Light";
-theme_pinkLight_subtitle = "White and pink";
-theme_pinkDark = "Pink Dark";
-theme_pinkDark_subtitle = "Black and pink";
-theme_ocean = "Ocean";
-theme_ocean_subtitle = "Deep blue with cyan highlights";
-theme_custom = "Custom";
-theme_custom_subtitle = "Pick your own colours";
-theme_custom_section = "Custom colours";
-theme_custom_footer = "Used instead of the preset's colours while Custom is selected.";
-theme_custom_accent = "Accent";
-theme_custom_background = "Background";
-theme_custom_card = "Cards";
-theme_custom_dark = "Use dark appearance";
-theme_extras_section = "Name and entry points";
-theme_extras_footer = "Controls the Iayxify name on Spotify's \"Your Premium\" row and the Iayxify Settings entries.";
-theme_option_rainbow = "Animated rainbow name";
-theme_option_premium_entry = "Show \"Iayxify Settings\" on the Your Premium page";
-theme_option_sidebar_entry = "Show \"Iayxify Settings\" in Spotify's sidebar";
-theme_option_tint = "Also tint Spotify's own controls";
-theme_preview_section = "Preview";
-theme_preview_row = "Highlighted row";
-theme_preview_card = "Themed card";
-theme_preview_toggle = "Toggle";
-theme_reset = "Reset to Dark mode";
-
-/* ---- Feature switches ---- */
-features_section = "Features";
-features_footer = "These take effect straight away.";
-features_clean_share_links = "Clean share links";
-features_restart_note = "Dark pop-ups apply the next time Spotify starts.";

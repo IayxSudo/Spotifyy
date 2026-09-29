@@ -22,16 +22,14 @@ struct CommonIssuesTipView: View {
                         )!,
                         label: {
                             VStack {
-                                // `.primary` so the tip stays readable on the
-                                // light themes.
                                 Text("\("common_issues_tip_message".localized) ")
-                                    .foregroundColor(.primary)
+                                    .foregroundColor(.white)
                                 
                                 + Text("common_issues_tip_button".localized)
                                     .foregroundColor(SpotifyySettingsView.spotifyAccentColor)
                                 
                                 + Text(".")
-                                    .foregroundColor(.primary)
+                                    .foregroundColor(.white)
                             }
                             .font(.subheadline)
                         }

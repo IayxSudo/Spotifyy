@@ -16,32 +16,12 @@ class SpotifyySettingsViewController: SPTPageViewController {
         fatalError("init(coder:) has not been implemented")
     }
     
-    override func viewWillAppear(_ animated: Bool) {
-        super.viewWillAppear(animated)
-        // Themes Iayxify's own screens. Entering here (rather than in
-        // viewDidLoad) makes sure the appearance proxies are set before the
-        // incoming screen's views are built, and the counter in
-        // SpotifyyAppearance keeps a pushed sub-screen from resetting the
-        // theme its parent is still using.
-        SpotifyyAppearance.enterThemedScreen()
-    }
-
-    override func viewDidDisappear(_ animated: Bool) {
-        super.viewDidDisappear(animated)
-        SpotifyyAppearance.leaveThemedScreen()
-    }
-
     override func viewDidLoad() {
         super.viewDidLoad()
-
-        let theme = SpotifyyAppearance.palette
+        
         let hostingController = UIHostingController(rootView: settingsView)
         hostingController.view.translatesAutoresizingMaskIntoConstraints = false
         hostingController.view.backgroundColor = .clear
-
-        // Shows the theme behind the SwiftUI list for the transparent parts.
-        view.backgroundColor = UIColor(theme.background)
-        view.overrideUserInterfaceStyle = theme.style
         
         view.addSubview(hostingController.view)
         addChild(hostingController)

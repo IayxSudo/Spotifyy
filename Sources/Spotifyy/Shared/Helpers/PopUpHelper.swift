@@ -2,11 +2,6 @@ import UIKit
 import Orion
 
 struct PopUpHelper {
-    /// Title of every dialog Iayxify shows. Also how the upsell blocker tells
-    /// our own dialogs apart from Spotify's Premium prompts, so the two must
-    /// stay in sync (`isSpotifyyPopupTitle`).
-    static let popUpTitle = "Iayxify"
-
     private static var isPopUpShowing = false
     
     static let sharedPresenter = type(
@@ -31,7 +26,7 @@ struct PopUpHelper {
             let model = Dynamic.SPTEncorePopUpDialogModel
                 .alloc(interface: SPTEncorePopUpDialogModel.self)
                 .initWithTitle(
-                    popUpTitle,
+                    "Spotifyy",
                     description: message,
                     image: nil,
                     primaryButtonTitle: buttonText,

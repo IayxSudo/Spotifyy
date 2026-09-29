@@ -114,7 +114,7 @@ struct SpotifyyListeningStatsView: View {
         VStack(alignment: .leading, spacing: 4) {
             Text(value)
                 .font(.system(size: 19, weight: .bold))
-                .foregroundColor(.primary)
+                .foregroundColor(.white)
                 .lineLimit(1)
                 .minimumScaleFactor(0.6)
             Text(label)
