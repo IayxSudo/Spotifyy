@@ -3,18 +3,20 @@ import UIKit
 
 /// Animated rainbow for Iayxify's own name on Spotify's native screens.
 ///
-/// Spotify draws the plan name we inject ("Iayxify") itself, so the only handle
-/// we get is the rendered view. Two paths exist:
+/// Spotify draws the plan name we inject ("Iayxify") itself, and in 9.1 that
+/// happens in its Element/SwiftUI layer, so there is often no `UILabel` to
+/// mask. Three strategies run in order of how good the result looks:
 ///
-/// - `decorate(_:)` walks a view tree for text labels whose text is exactly the
-///   brand name and masks them with a gradient that rotates around the label,
-///   which is what makes the colour appear to spin.
-/// - `decorateBadge(in:)` covers the case where there is no label at all: some
-///   of Spotify's badges draw their text with an Element component. Those are
-///   found by the colour we put in the badge payload — the one signal that is
-///   ours and stable — and repainted with a masked label on top.
+/// 1. A text-only label is masked directly — the sharpest rainbow, because
+///    Spotify's own glyphs are what gets the gradient.
+/// 2. A label that paints its own pill gets that colour moved to a sibling view
+///    behind it first, then is masked — otherwise the mask would recolour the
+///    pill and the letters with the same gradient, making the text vanish.
+/// 3. No label at all: the badge is found by the colour written into the plan
+///    payload and replaced with our own pill drawn the same way, so the rainbow
+///    is legible regardless of how Spotify renders its text.
 enum IayxifyRainbow {
-    /// Text the badge and plan rows are given. Only labels matching this are
+    /// Text the badge and plan rows are given. Only views matching this are
     /// touched, so the effect can't leak onto Spotify's own copy.
     static let brandName = "Iayxify"
 
@@ -31,80 +33,100 @@ enum IayxifyRainbow {
 
     private static let maskName = "IayxifyRainbowMask"
     private static let spinKey = "IayxifyRainbowSpin"
+    /// Background kept behind a pill label we are about to mask.
+    private static let backdropTag = 1342
+    /// Our own pill, drawn where Spotify's badge was.
+    private static let replacementTag = 1343
     private static let spinDuration: CFTimeInterval = 3.0
     /// Keyframes in one full sweep — 24 gives a smooth rotation without a
     /// pointless amount of interpolation work.
     private static let spinSteps = 24
 
-    /// Tag on the repaint view `decorateBadge(in:)` adds. Prefixed so it can't
-    /// collide with the entry points' 1337-1340 range.
-    private static let overlayTag = 1341
-
     /// Minimum time between fruitless searches: a layout pass must not turn a
-    /// full window walk into a per-frame cost. A live label or badge is reused
-    /// without waiting, so only the "nothing to decorate" case is throttled.
+    /// full window walk into a per-frame cost. Anything already decorated is
+    /// reused without waiting, so only the "nothing found" case is throttled.
     private static let rescanInterval: CFTimeInterval = 0.5
 
-    /// Last label we decorated, so the layout pass doesn't re-walk the view tree
-    /// on every frame. Weak: the label belongs to Spotify's view hierarchy.
+    /// Last label we decorated. Weak: it belongs to Spotify's view hierarchy.
     private static weak var cachedLabel: UILabel?
-    /// Colour the label had before we took it over, so switching the feature off
-    /// puts Spotify's own colour back instead of leaving white text behind.
+    /// Colour that label had before we took it over, so switching the feature
+    /// off puts Spotify's own look back.
     private static var cachedLabelColor: UIColor?
+    /// Pill colour we moved off a label, for the same reason.
+    private static var cachedLabelBackground: UIColor?
 
-    /// Last badge we repainted, so a live one isn't searched for again.
     private static weak var cachedPill: UIView?
-    private static var lastBadgeScan: CFTimeInterval = 0
-    private static var lastLabelScan: CFTimeInterval = 0
+    private static weak var cachedReplacement: UIView?
+    private static var lastScan: CFTimeInterval = 0
 
-    // MARK: - Text labels
+    // MARK: - Entry point
 
-    /// Applies the animated rainbow to the brand name under `root`.
+    /// Applies the rainbow to the brand name under `root`.
     ///
     /// Safe to call from every layout pass: the tree walk only happens when
-    /// there is no live decorated label yet.
+    /// nothing decorated is live any more.
     static func decorate(_ root: UIView?) {
         guard let root = root else { return }
 
         guard SpotifyyAppearance.options.rainbowPremiumName else {
-            // Turning the option off should also undo an already-rainbow label.
-            if let cached = cachedLabel { clear(cached) }
-            cachedLabel = nil
+            clear(in: root)
             return
         }
 
-        if let cached = cachedLabel, isUsable(cached, in: root) {
-            // Still on screen, still inside this root and still showing our
-            // name: just re-size the mask. The text check matters because these
-            // are recycled cells — a label we colourised can later be handed to
-            // a different row.
-            apply(to: cached)
+        if let label = cachedLabel,
+           text(of: label) == brandName, label.window != nil, label.isDescendant(of: root) {
+            // Still on screen and still ours: just re-size the mask. The text
+            // check matters because these are recycled cells — a label we
+            // colourised can later be handed to a different row.
+            apply(to: label)
+            return
+        }
+
+        if let replacement = cachedReplacement, let pill = cachedPill,
+           replacement.window != nil, replacement.isDescendant(of: root),
+           replacement.superview === pill.superview {
+            replacement.frame = pill.frame
+            hide(pill)
             return
         }
 
         let now = CACurrentMediaTime()
-        guard now - lastLabelScan >= rescanInterval else { return }
-        lastLabelScan = now
+        guard now - lastScan >= rescanInterval else { return }
+        lastScan = now
 
-        guard let label = firstBrandLabel(in: root) else { return }
+        if decorateLabel(in: root) { return }
+        decoratePill(in: root)
+    }
+
+    // MARK: - Labels
+
+    private static func decorateLabel(in root: UIView) -> Bool {
+        guard let label = brandLabel(in: root) else { return false }
+
+        // A label that paints its own pill keeps its colour on a sibling view,
+        // which also becomes the badge's background once the mask is applied.
+        if !hasClearBackground(label), let background = label.backgroundColor {
+            cachedLabelBackground = background
+            moveBackgroundToBackdrop(of: label, colour: background)
+        }
+
         apply(to: label)
+        return true
     }
 
-    private static func isUsable(_ label: UILabel, in root: UIView) -> Bool {
-        label.text == brandName && label.window != nil && label.isDescendant(of: root)
-    }
-
-    /// Walks the tree breadth-first — the name is usually near the top of these
-    /// pages, so this avoids descending into the whole list.
-    private static func firstBrandLabel(in root: UIView) -> UILabel? {
+    /// Prefers a text-only label (best result) and falls back to the first label
+    /// carrying the name, wherever it is.
+    private static func brandLabel(in root: UIView) -> UILabel? {
+        var fallback: UILabel?
         var queue: [UIView] = [root]
 
         while !queue.isEmpty {
             var next: [UIView] = []
 
-            for view in queue {
-                if let label = view as? UILabel, label.text == brandName, hasClearBackground(label) {
-                    return label
+            for view in queue where view.tag != replacementTag {
+                if let label = view as? UILabel, text(of: label) == brandName {
+                    if hasClearBackground(label) { return label }
+                    if fallback == nil { fallback = label }
                 }
                 next.append(contentsOf: view.subviews)
             }
@@ -112,16 +134,38 @@ enum IayxifyRainbow {
             queue = next
         }
 
-        return nil
+        return fallback
     }
 
-    /// Only text-only labels can be masked: the mask replaces every pixel the
-    /// layer draws, so a label that paints its own pill background would turn
-    /// into a solid rainbow bar with the letters swallowed by it. Those are
-    /// handled by `decorateBadge(in:)` instead.
+    /// SwiftUI-backed badges set an attributed string and leave `text` nil.
+    private static func text(of label: UILabel) -> String? {
+        label.text ?? label.attributedText?.string
+    }
+
     private static func hasClearBackground(_ label: UILabel) -> Bool {
         guard let background = label.backgroundColor else { return true }
         return background.cgColor.alpha < 0.02
+    }
+
+    private static func moveBackgroundToBackdrop(of label: UILabel, colour: UIColor) {
+        guard let superview = label.superview else { return }
+
+        let backdrop: UIView
+        if let existing = superview.viewWithTag(backdropTag) {
+            backdrop = existing
+        } else {
+            backdrop = UIView(frame: label.frame)
+            backdrop.tag = backdropTag
+            backdrop.layer.cornerRadius = label.layer.cornerRadius
+            backdrop.layer.cornerCurve = label.layer.cornerCurve
+            backdrop.autoresizingMask = label.autoresizingMask
+            superview.insertSubview(backdrop, belowSubview: label)
+        }
+
+        backdrop.frame = label.frame
+        backdrop.backgroundColor = colour
+
+        label.backgroundColor = .clear
     }
 
     static func apply(to label: UILabel) {
@@ -152,70 +196,52 @@ enum IayxifyRainbow {
         startSpinIfNeeded(gradient)
     }
 
-    /// Removes the mask so a recycled label goes back to normal text.
-    static func clear(_ label: UILabel) {
-        if let mask = label.layer.mask as? CAGradientLayer, mask.name == maskName {
-            label.layer.mask = nil
-        }
-        label.textColor = cachedLabelColor ?? .white
-        cachedLabelColor = nil
-    }
+    // MARK: - Badges with no label to mask
 
-    // MARK: - Badges that aren't labels
+    private static func decoratePill(in root: UIView) {
+        guard let pill = brandPill(in: root), let superview = pill.superview else { return }
 
-    /// Repaints a badge whose text Spotify draws without a label.
-    ///
-    /// The badge is identified by the colour written into the plan payload
-    /// (`SpotifyyAppearance.planAccentHex`) — deliberately a colour Spotify
-    /// itself never uses for these pills, so finding it means the pill is ours.
-    static func decorateBadge(in root: UIView?) {
-        guard let root = root else { return }
-
-        guard SpotifyyAppearance.options.rainbowPremiumName else {
-            cachedPill?.viewWithTag(overlayTag)?.removeFromSuperview()
-            cachedPill = nil
-            return
-        }
-
-        if let cached = cachedPill, cached.window != nil, cached.isDescendant(of: root) {
-            return
-        }
-        cachedPill = nil
-
-        // Nothing to do when a real label carries the name: masking that is
-        // better than covering Spotify's text with our own.
-        if firstBrandLabel(in: root) != nil { return }
-
-        guard let pill = brandBadge(in: root) else { return }
         cachedPill = pill
-        guard pill.viewWithTag(overlayTag) == nil else { return }
+        hide(pill)
 
-        let cover = UIView(frame: pill.bounds)
-        cover.tag = overlayTag
-        cover.backgroundColor = pill.backgroundColor
-        cover.layer.cornerRadius = pill.layer.cornerRadius
-        cover.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        if let replacement = cachedReplacement,
+           replacement.superview === superview,
+           replacement.isDescendant(of: root) {
+            replacement.frame = pill.frame
+            return
+        }
 
-        let label = UILabel(frame: cover.bounds)
+        removeAll(tag: replacementTag, in: root)
+
+        let replacement = UIView(frame: pill.frame)
+        replacement.tag = replacementTag
+        replacement.backgroundColor = pill.backgroundColor
+            ?? UIColor(Color(hex: SpotifyyAppearance.planAccentHex))
+        replacement.layer.cornerRadius = radius(of: pill)
+        replacement.layer.cornerCurve = pill.layer.cornerCurve
+        replacement.autoresizingMask = pill.autoresizingMask
+
+        let label = UILabel(frame: replacement.bounds)
         label.text = brandName
         label.textAlignment = .center
-        label.font = .systemFont(ofSize: max(11, pill.bounds.height * 0.58), weight: .bold)
+        label.font = .systemFont(ofSize: max(11, pill.bounds.height * 0.56), weight: .bold)
         label.adjustsFontSizeToFitWidth = true
-        label.minimumScaleFactor = 0.6
+        label.minimumScaleFactor = 0.5
         label.autoresizingMask = [.flexibleWidth, .flexibleHeight]
-        cover.addSubview(label)
+        replacement.addSubview(label)
 
-        pill.addSubview(cover)
+        superview.insertSubview(replacement, aboveSubview: pill)
+        cachedReplacement = replacement
+
         apply(to: label)
     }
 
-    /// Finds our own badge pill: small, rounded, and painted in the plan colour
-    /// we chose. Throttled, because a miss means walking the whole window.
-    private static func brandBadge(in root: UIView) -> UIView? {
-        let now = CACurrentMediaTime()
-        guard now - lastBadgeScan >= rescanInterval else { return nil }
-        lastBadgeScan = now
-
+    /// Finds our own badge: a small pill painted in the colour we chose.
+    ///
+    /// The width-to-height ratio matters — Spotify uses this same pink family
+    /// for notification dots, and those are square, so a dot is never mistaken
+    /// for the badge and hidden.
+    private static func brandPill(in root: UIView) -> UIView? {
         let target = UIColor(Color(hex: SpotifyyAppearance.planAccentHex))
         var found: UIView?
 
@@ -223,7 +249,7 @@ enum IayxifyRainbow {
         while !queue.isEmpty, found == nil {
             var next: [UIView] = []
 
-            for view in queue where view.tag != overlayTag {
+            for view in queue where view.tag != replacementTag && view.tag != backdropTag {
                 if isPlanColoured(view, target: target) {
                     found = view
                     break
@@ -239,8 +265,10 @@ enum IayxifyRainbow {
 
     private static func isPlanColoured(_ view: UIView, target: UIColor) -> Bool {
         let bounds = view.bounds
-        guard bounds.height >= 16, bounds.height <= 36,
-              bounds.width >= 26, bounds.width <= 180,
+        guard !(view is UIImageView),
+              bounds.height >= 16, bounds.height <= 40,
+              bounds.width >= 40, bounds.width <= 190,
+              bounds.width >= bounds.height * 1.4,
               let background = view.backgroundColor,
               background.cgColor.alpha > 0.9 else {
             return false
@@ -258,6 +286,56 @@ enum IayxifyRainbow {
         // this magenta-pink.
         let tolerance: CGFloat = 0.09
         return abs(tr - vr) < tolerance && abs(tg - vg) < tolerance && abs(tb - vb) < tolerance
+    }
+
+    private static func radius(of pill: UIView) -> CGFloat {
+        guard pill.layer.cornerRadius > 0 else {
+            // Spotify's badges are gently rounded rather than capsules.
+            return min(pill.bounds.height / 2, 9)
+        }
+        return pill.layer.cornerRadius
+    }
+
+    private static func hide(_ view: UIView) {
+        // `alpha` as well as `isHidden`: Spotify re-binds these rows, and a
+        // rebuilt pill can have its hidden flag written again.
+        view.isHidden = true
+        view.alpha = 0
+    }
+
+    // MARK: - Teardown
+
+    private static func clear(in root: UIView) {
+        if let label = cachedLabel {
+            if let mask = label.layer.mask as? CAGradientLayer, mask.name == maskName {
+                label.layer.mask = nil
+            }
+            label.textColor = cachedLabelColor ?? .white
+            if let background = cachedLabelBackground {
+                label.backgroundColor = background
+            }
+        }
+
+        cachedLabel = nil
+        cachedLabelColor = nil
+        cachedLabelBackground = nil
+
+        if let pill = cachedPill {
+            pill.isHidden = false
+            pill.alpha = 1
+        }
+
+        cachedPill = nil
+        cachedReplacement = nil
+
+        removeAll(tag: replacementTag, in: root)
+        removeAll(tag: backdropTag, in: root)
+    }
+
+    private static func removeAll(tag: Int, in root: UIView) {
+        while let view = root.viewWithTag(tag) {
+            view.removeFromSuperview()
+        }
     }
 
     // MARK: - Animation
