@@ -53,8 +53,16 @@ import struct
 import sys
 import zipfile
 
-# Injection basenames to strip, without the extension. A stale Iayxify.dylib is
-# stripped too, so re-running this on an already-patched IPA cleans it.
+# Injection basenames to strip, without the extension.
+#
+# EeveeSpotify, Spotifyy and Iayxify are one tweak under three successive names,
+# and an IPA in circulation can carry any of them: upstream's original, this
+# project before it was renamed, and this project now. This list therefore
+# ACCUMULATES names and must never be renamed alongside the tweak -- doing that
+# silently drops the ability to clean every build that predates the rename, and
+# the failure mode is the one this whole script exists to prevent (a base patched
+# by Spotifyy.dylib plus a freshly injected Iayxify.dylib loads two copies of the
+# same tweak, and crashes). Missing Spotifyy here once already did exactly that.
 #
 # zxPluginsInject belongs in this list even though it is not a competing tweak:
 # ipapatch refuses to LC-inject a dylib whose load command is already present
@@ -62,11 +70,12 @@ import zipfile
 # that was patched before always carries one in the main executable and in every
 # appex. Repointing that load command also clears ipapatch's name comparison, so
 # its own fresh injection succeeds.
-STALE_STEMS = ("EeveeSpotify", "Iayxify", "zxPluginsInject")
+STALE_STEMS = ("EeveeSpotify", "Spotifyy", "Iayxify", "zxPluginsInject")
 
 # Bundles belonging to those tweaks. Jailbreak tweaks ship no bundle, but
-# IPA-patched builds of them do. zxPluginsInject has none.
-STALE_BUNDLES = ("EeveeSpotify.bundle", "Iayxify.bundle")
+# IPA-patched builds of them do. zxPluginsInject has none. Accumulates for the
+# same reason as STALE_STEMS.
+STALE_BUNDLES = ("EeveeSpotify.bundle", "Spotifyy.bundle", "Iayxify.bundle")
 
 # A stale load is pointed at a path that cannot exist as well as downgraded to
 # LC_LOAD_WEAK_DYLIB, so the skip holds independently of dyld's weak-link

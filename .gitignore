@@ -29,6 +29,10 @@ installer/node_modules/
 installer/dist/
 installer/.venv/
 
+# Electron installer build outputs: generated icon, frozen bridge, packaged .exe
+installer/build/
+installer/release/
+
 # zxPluginsInject build outputs
 modules/zxPluginsInject/.theos/
 modules/zxPluginsInject/packages/
