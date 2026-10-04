@@ -3,11 +3,15 @@ import UIKit
 
 struct IayxifySettingsView: View {
     let navigationController: UINavigationController
-    static let spotifyAccentColor = Color(hex: "#1ed760")
+
+    /// The accent Iayxify's own screens use. Named for Spotify green because
+    /// every call site predates the theme engine; it now follows the theme.
+    static var spotifyAccentColor: Color { IayxifyAppearance.accentColor }
     
     @State private var hasShownCommonIssuesTip = UserDefaults.hasShownCommonIssuesTip
     @State private var isClearingData = false
     @State private var isPresentingDevNoteSheet = false
+    @State private var appearanceOptions = UserDefaults.appearanceThemeOptions
 
 
     private func confirmDestructive(
@@ -35,7 +39,52 @@ struct IayxifySettingsView: View {
     
     init(navigationController: UINavigationController) {
         self.navigationController = navigationController
-        UIView.appearance().tintColor = UIColor(IayxifySettingsView.spotifyAccentColor)
+        // Push the theme into UIKit's appearance proxies once, before the first
+        // screen is built; the engine keeps every view after that in sync.
+        IayxifyAppearance.applyToSystemControls()
+    }
+
+    // MARK: - Theme quick picker
+
+    private func themeSwatch(_ theme: IayxifyTheme) -> some View {
+        let swatch = theme.palette(custom: appearanceOptions.custom)
+        let isSelected = appearanceOptions.theme == theme
+
+        return VStack(spacing: 6) {
+            ZStack {
+                Circle()
+                    .fill(
+                        LinearGradient(
+                            gradient: Gradient(colors: [swatch.background, swatch.accent]),
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .frame(width: 34, height: 34)
+
+                Circle()
+                    .stroke(swatch.accent, lineWidth: 2)
+                    .frame(width: 42, height: 42)
+                    .opacity(isSelected ? 1 : 0)
+            }
+            .frame(width: 44, height: 44)
+
+            Text(theme.localizationKey.localized)
+                .font(.system(size: 10))
+                .foregroundColor(.secondary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+        }
+        .frame(maxWidth: .infinity)
+        .contentShape(Rectangle())
+    }
+
+    private func selectTheme(_ theme: IayxifyTheme) {
+        appearanceOptions.theme = theme
+        UserDefaults.appearanceThemeOptions = appearanceOptions
+        IayxifyAppearance.applyToSystemControls()
+        IayxifyAppearance.refreshScreenAppearance()
+        IayxifyAppearance.notifyChanged(debounced: false)
     }
 
     var body: some View {
@@ -52,6 +101,36 @@ struct IayxifySettingsView: View {
             }
             
             //
+            
+            Section(
+                header: Text("theme_quick_section".localized),
+                footer: Text("theme_quick_footer".localized)
+            ) {
+                HStack(spacing: 4) {
+                    ForEach(IayxifyTheme.allCases, id: \.self) { theme in
+                        Button {
+                            selectTheme(theme)
+                        } label: {
+                            themeSwatch(theme)
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                    }
+                }
+                .padding(.vertical, 2)
+
+                Button {
+                    pushSettingsController(
+                        with: IayxifyAppearanceSettingsView(),
+                        title: "appearance".localized
+                    )
+                } label: {
+                    NavigationSectionView(
+                        color: Color(hex: "#64D2FF"),
+                        title: "appearance".localized,
+                        imageSystemName: "paintpalette.fill"
+                    )
+                }
+            }
             
             Button {
                 pushSettingsController(
@@ -292,7 +371,9 @@ struct IayxifySettingsView: View {
         .animation(.default, value: hasShownCommonIssuesTip)
 
         .onAppear {
-            WindowHelper.shared.overrideUserInterfaceStyle(.dark)
+            // The window style and the app-wide repaint are the engine's job;
+            // this just makes sure the screen that is opening picks them up.
+            IayxifyAppearance.refreshScreenAppearance()
         }
     }
 }

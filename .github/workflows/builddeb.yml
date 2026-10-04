@@ -88,6 +88,11 @@ jobs:
             Tests/BundledConfigurationPolicy/main.swift \
             -o "$RUNNER_TEMP/bundled-configuration-policy-tests"
           "$RUNNER_TEMP/bundled-configuration-policy-tests"
+          swiftc \
+            Sources/Iayxify/Appearance/IayxifyThemeColorMap.swift \
+            Tests/ThemeColorMapping/main.swift \
+            -o "$RUNNER_TEMP/theme-color-mapping-tests"
+          "$RUNNER_TEMP/theme-color-mapping-tests"
           python3 Tests/ResolveConfigurationSnapshot/test.py
 
       - name: Build ${{ matrix.label }} .deb

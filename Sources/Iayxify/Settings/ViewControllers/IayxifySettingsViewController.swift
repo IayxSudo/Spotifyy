@@ -35,6 +35,19 @@ class IayxifySettingsViewController: SPTPageViewController {
         ])
     }
     
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        // Brackets the screen for the theme engine: it keeps the window and the
+        // list appearance proxies in the selected theme while we are on top,
+        // and hands them back to Spotify on the way out.
+        IayxifyAppearance.enterThemedScreen()
+    }
+
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        IayxifyAppearance.leaveThemedScreen()
+    }
+
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         // Become first responder so we can receive motion events

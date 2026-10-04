@@ -68,6 +68,15 @@ jobs:
           chmod +x Tools/SwiftProtobufBuild/build-iayxifyswiftprotobuf.sh
           Tools/SwiftProtobufBuild/build-iayxifyswiftprotobuf.sh
 
+      - name: Test theme colour mapping
+        run: |
+          # Pure logic, no UIKit: the mapping rules the on-device engine relies on.
+          swiftc \
+            Sources/Iayxify/Appearance/IayxifyThemeColorMap.swift \
+            Tests/ThemeColorMapping/main.swift \
+            -o "$RUNNER_TEMP/theme-color-mapping-tests"
+          "$RUNNER_TEMP/theme-color-mapping-tests"
+
       - name: Build .deb (rootless)
         env:
           REPO_SLUG: ${{ github.repository }}

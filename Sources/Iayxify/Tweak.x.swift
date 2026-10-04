@@ -219,7 +219,7 @@ func iayxifyEnvFlag(_ name: String) -> Bool {
 
 struct Iayxify: Tweak {
     static let version = "6.7.0"
-    static let buildNumber = "1"
+    static let buildNumber = "2"
     static let repoSlug = GeneratedConfig.repoSlug
     
     static var hookTarget: VersionHookTarget {
@@ -282,6 +282,16 @@ struct Iayxify: Tweak {
         activateIayxifyPremiumForce()
 
         activateIayxifyCrossfadeForce()
+
+        // Appearance: the theme engine is installed before Spotify builds its
+        // first screen, so its own colours are remapped from launch. The entry
+        // point groups below are each guarded on their Spotify class existing,
+        // so a missing/renamed class costs the feature, never the launch.
+        IayxifyThemeEngine.shared.install()
+        IayxifyAppearance.applyToSystemControls()
+        activateIayxifyThemeRefresh()
+        activateIayxifySideDrawerExtras()
+        activateIayxifyPremiumPageExtras()
 
         // TESTING: extended ad blocker (NPV/lyrics ad, home brand-ads, in-stream).
         activateIayxifyAdBlockerExtended()

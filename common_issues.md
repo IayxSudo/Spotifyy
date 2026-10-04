@@ -40,6 +40,8 @@ Iayxify settings can be accessed from within the Spotify app:
 3. Scroll down to find "Iayxify" in the settings list
 4. Tap to access all tweak settings
 
+There is also an "Iayxify Settings" row in Spotify's side drawer (the panel with Add account / Your Premium / Settings and privacy), and an "Iayxify Settings" button on the "Your Premium" page. Both can be hidden again from Iayxify settings > Themes > Name and entry points.
+
 ## Something Went Wrong
 
 If you're unable to sign in and see an error, try these solutions:
