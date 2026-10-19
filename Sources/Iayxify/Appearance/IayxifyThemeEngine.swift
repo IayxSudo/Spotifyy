@@ -220,7 +220,10 @@ final class IayxifyThemeEngine {
             return color
         }
 
-        objc_setAssociatedObject(layer, layerBackgroundKey, color, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
+        // Store the UIColor, not the CGColor: reading a CoreFoundation type
+        // back out of an associated object needs a bridged cast, which Swift 6
+        // rejects as a conditional downcast that can never fail.
+        objc_setAssociatedObject(layer, layerBackgroundKey, uiColor, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
         auditRemapped += 1
         return UIColor(mapped).cgColor
     }
@@ -272,7 +275,7 @@ final class IayxifyThemeEngine {
         let background = objc_getAssociatedObject(view, backgroundKey) as? UIColor
         let text = (view as? UILabel).flatMap { objc_getAssociatedObject($0, textKey) as? UIColor }
         let accent = objc_getAssociatedObject(view, accentKey) as? UIColor
-        let layerBackground = objc_getAssociatedObject(view.layer, layerBackgroundKey) as? CGColor
+        let layerBackground = objc_getAssociatedObject(view.layer, layerBackgroundKey) as? UIColor
 
         if isRemapping {
             if let original = background, let mapped = mapped(original) {
@@ -299,7 +302,7 @@ final class IayxifyThemeEngine {
                 view.tintColor = original
             }
             if let original = layerBackground {
-                view.layer.backgroundColor = original
+                view.layer.backgroundColor = original.cgColor
             }
         }
     }
@@ -310,10 +313,6 @@ final class IayxifyThemeEngine {
             return nil
         }
         return UIColor(mapped)
-    }
-
-    private func mapped(_ color: CGColor) -> UIColor? {
-        mapped(UIColor(cgColor: color))
     }
 
     // MARK: - Windows
@@ -393,7 +392,11 @@ final class IayxifyThemeSwizzles: NSObject {
 
     @objc dynamic func iayxify_setLayerBackgroundColor(_ color: CGColor?) {
         let engine = IayxifyThemeEngine.shared
-        iayxify_setLayerBackgroundColor(engine.themedLayerBackground(for: self, color: color))
+        // The method is exchanged onto CALayer, so at runtime `self` is the
+        // layer being painted; statically it is still this helper, hence the
+        // hop through AnyObject.
+        guard let layer = (self as AnyObject) as? CALayer else { return }
+        iayxify_setLayerBackgroundColor(engine.themedLayerBackground(for: layer, color: color))
     }
 
     @objc dynamic func iayxify_setOnTintColor(_ color: UIColor?) {
